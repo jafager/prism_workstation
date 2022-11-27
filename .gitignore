@@ -1,2 +1,6 @@
 mklab/.terraform.lock.hcl
 mklab/.terraform
+mklab/terraform.tfstate
+mklab/terraform.tfstate.backup
+mklab/mklab_rsa
+mklab/mklab_rsa.pub

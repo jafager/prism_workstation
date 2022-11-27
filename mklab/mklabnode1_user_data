@@ -1,0 +1,15 @@
+#cloud-config
+hostname: mklabnode1
+fqdn: mklabnode1.mklab.prism.local
+manage_etc_hosts: true
+users:
+  - name: ansible
+    sudo: 'ALL = (ALL) NOPASSWD: ALL'
+    ssh-authorized-keys:
+      - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCacO3pJosvVdud1+XeZaj0+TXn2VmWhd+u6MasVsRpyOiBt/dafElYSQGmsWZ9s2p8nNO+93RCm/8qsY+R+zCpYEUwLhzV1hRa7PTFYaVwNyoR1U9dJZACNKqyVXfn3RB7D70Or9x7AHJv/j1bPOL7677pPU2+oFSYt17CftsQK+x4j+hQtMeUbRU8prt2h7/kNBOcpwD1yWis3j7q5NlPDiY7t4O+hXjbd/aXlF/QkFlIf+E6uy22AlimvR1bvTSG2OnVwMQ2cDIIrWjs7WZr92SkvJw2W/arFmnX577s5aiKE2Pj93lTYD4FTcMNEGMyrxsWQBa1xebaabjoY+TklZ4uEqGMj6QkN9S+zNMnjLNdtsLn1mSVlLy+poNc7LscJcdNwSSYsr392FH/oTMQmnqhAZqoSnVTxopFNKBkPhoREUo23fELN72Nzohlxtd5kJEoJdKDbnvFyyMmFIUET/FcE4dArVrYBBlhh0pOruI9Ufu327JQnftBlUpdknU= jafager@prism'
+ssh_pwauth: false
+disable_root: true
+chpasswd:
+  list: |
+    ansible:Ansible2204
+  expire: false
