@@ -1,0 +1,6 @@
+all:
+  hosts:
+    prism:
+      ansible_connection: local
+  vars:
+    ansible_become: yes

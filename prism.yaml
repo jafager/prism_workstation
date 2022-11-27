@@ -1,0 +1,172 @@
+---
+
+- name: Configure prism workstation
+  hosts: prism
+  tasks:
+
+    - name: Upgrade packages
+      ansible.builtin.apt:
+        name: '*'
+        state: latest # noqa package-latest
+        update_cache: true
+        autoremove: true
+
+    - name: Install desktop environment
+      ansible.builtin.apt:
+        name: ubuntu-desktop-minimal
+
+    - name: Install Chromium
+      community.general.snap:
+        name: chromium
+
+    - name: Install Ansible prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - software-properties-common
+
+    - name: Install Ansible repository
+      ansible.builtin.apt_repository:
+        repo: ppa:ansible/ansible
+
+    - name: Install Ansible
+      ansible.builtin.apt:
+        name: ansible
+        update_cache: true
+
+    - name: Create Ansible config file
+      ansible.builtin.copy:
+        dest: /home/jafager/.ansible.cfg
+        owner: jafager
+        group: root
+        mode: 0644
+        content: |
+          [defaults]
+          inventory = /home/jafager/projects/prism_workstation/inventory.yaml
+          deprecation_warnings = false
+
+    - name: Set time zone
+      community.general.timezone:
+        name: America/New_York
+
+    - name: Install KVM prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - qemu-kvm
+          - libvirt-daemon-system
+          - virtinst
+          - libvirt-clients
+          - bridge-utils
+
+    - name: Start and enable libvirtd service
+      ansible.builtin.service:
+        name: libvirtd
+        state: started
+        enabled: true
+
+    - name: Add user to libvirt group
+      ansible.builtin.user:
+        name: jafager
+        groups: libvirt
+        append: true
+
+    - name: Install virtual machine manager
+      ansible.builtin.apt:
+        name: virt-manager
+
+    - name: Create volume group
+      community.general.lvg:
+        vg: datavg
+        pvs: /dev/sdb
+
+    - name: Create logical volume for libvirt
+      community.general.lvol:
+        lv: libvirt
+        vg: datavg
+        size: 128g
+
+    - name: Create filesystem for libvirt
+      community.general.filesystem:
+        dev: /dev/datavg/libvirt
+        fstype: ext4
+
+    - name: Mount libvirt filesystem
+      ansible.posix.mount:
+        path: /mnt/libvirt
+        src: /dev/datavg/libvirt
+        fstype: ext4
+        state: mounted
+
+    - name: Install Terraform prerequisites
+      ansible.builtin.apt:
+        name: '{{ item }}'
+      loop:
+        - software-properties-common
+
+    - name: Get release name
+      ansible.builtin.command:
+        cmd: lsb_release -cs
+      changed_when: false
+      register: lsb_release
+
+    - name: Add Terraform repository key
+      ansible.builtin.apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+
+    - name: Add Terraform repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://apt.releases.hashicorp.com {{ lsb_release.stdout }} main'
+
+    - name: Install Terraform
+      ansible.builtin.apt:
+        name: terraform
+        update_cache: true
+
+    - name: Disable SELinux for QEMU
+      ansible.builtin.lineinfile:
+        path: /etc/libvirt/qemu.conf
+        line: security_driver = "none"
+        backup: true
+      register: disable_selinux_qemu
+
+    - name: Restart libvirt service # noqa no-handler
+      ansible.builtin.service:
+        name: libvirtd
+        state: restarted
+      when: disable_selinux_qemu.changed
+
+    - name: Install genisoimage for mkisofs command (for Terraform cloud-init templates)
+      ansible.builtin.apt:
+        name: genisoimage
+
+    - name: Install quality of life packages
+      ansible.builtin.apt:
+        pkg:
+          - make
+
+    - name: Create sudoers file
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/jafager
+        owner: root
+        group: root
+        mode: 0644
+        content: 'jafager ALL = (ALL) NOPASSWD: ALL'
+
+    - name: Create shell functions for managing prism configuration
+      ansible.builtin.blockinfile:
+        path: /home/jafager/.bashrc
+        block: |
+          function viprism {
+            vi /home/jafager/projects/prism_workstation/prism.yaml
+          }
+          function prism {
+            ansible-playbook -i /home/jafager/projects/prism_workstation/inventory.yaml /home/jafager/projects/prism_workstation/prism.yaml
+          }
+
+    - name: Install Visual Studio Code
+      community.general.snap:
+        name: code
+        classic: true
+
+    - name: Install ansible-lint (used by vscode)
+      ansible.builtin.apt:
+        name: ansible-lint
