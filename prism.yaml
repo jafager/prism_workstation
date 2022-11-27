@@ -170,3 +170,7 @@
     - name: Install ansible-lint (used by vscode)
       ansible.builtin.apt:
         name: ansible-lint
+
+    - name: Install Nvidia proprietary drivers
+      ansible.builtin.apt:
+        name: nvidia-driver-520
