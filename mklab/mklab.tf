@@ -58,3 +58,59 @@ resource "libvirt_domain" "mklabnode1" {
     cloudinit = libvirt_cloudinit_disk.mklabnode1.id
     depends_on = [libvirt_volume.mklabnode1, libvirt_network.mklab]
 }
+
+resource "libvirt_volume" "mklabnode2" {
+    name = "mklabnode2.qcow2"
+    pool = "mklab"
+    format = "qcow2"
+    base_volume_name = "ubuntu2204.qcow2"
+    depends_on = [libvirt_volume.ubuntu2204]
+}
+
+resource "libvirt_cloudinit_disk" "mklabnode2" {
+    name = "mklabnode2.iso"
+    user_data = file("${path.module}/mklabnode2_user_data")
+    network_config = file("${path.module}/mklabnode2_network_config")
+}
+
+resource "libvirt_domain" "mklabnode2" {
+    name = "mklabnode2"
+    vcpu = "1"
+    memory = "4096"
+    disk {
+        volume_id = libvirt_volume.mklabnode2.id
+    }
+    network_interface {
+        network_id = libvirt_network.mklab.id
+    }
+    cloudinit = libvirt_cloudinit_disk.mklabnode2.id
+    depends_on = [libvirt_volume.mklabnode2, libvirt_network.mklab]
+}
+
+resource "libvirt_volume" "mklabnode3" {
+    name = "mklabnode3.qcow2"
+    pool = "mklab"
+    format = "qcow2"
+    base_volume_name = "ubuntu2204.qcow2"
+    depends_on = [libvirt_volume.ubuntu2204]
+}
+
+resource "libvirt_cloudinit_disk" "mklabnode3" {
+    name = "mklabnode3.iso"
+    user_data = file("${path.module}/mklabnode3_user_data")
+    network_config = file("${path.module}/mklabnode3_network_config")
+}
+
+resource "libvirt_domain" "mklabnode3" {
+    name = "mklabnode3"
+    vcpu = "1"
+    memory = "4096"
+    disk {
+        volume_id = libvirt_volume.mklabnode3.id
+    }
+    network_interface {
+        network_id = libvirt_network.mklab.id
+    }
+    cloudinit = libvirt_cloudinit_disk.mklabnode3.id
+    depends_on = [libvirt_volume.mklabnode3, libvirt_network.mklab]
+}
