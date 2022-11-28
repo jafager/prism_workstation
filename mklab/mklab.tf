@@ -35,6 +35,7 @@ resource "libvirt_volume" "mklabnode1" {
     name = "mklabnode1.qcow2"
     pool = "mklab"
     format = "qcow2"
+    size = 32 * 1024 * 1024 * 1024
     base_volume_name = "ubuntu2204.qcow2"
     depends_on = [libvirt_volume.ubuntu2204]
 }
@@ -63,6 +64,7 @@ resource "libvirt_volume" "mklabnode2" {
     name = "mklabnode2.qcow2"
     pool = "mklab"
     format = "qcow2"
+    size = 32 * 1024 * 1024 * 1024
     base_volume_name = "ubuntu2204.qcow2"
     depends_on = [libvirt_volume.ubuntu2204]
 }
@@ -91,6 +93,7 @@ resource "libvirt_volume" "mklabnode3" {
     name = "mklabnode3.qcow2"
     pool = "mklab"
     format = "qcow2"
+    size = 32 * 1024 * 1024 * 1024
     base_volume_name = "ubuntu2204.qcow2"
     depends_on = [libvirt_volume.ubuntu2204]
 }

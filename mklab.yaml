@@ -1,0 +1,33 @@
+---
+
+- name: Configure microk8s lab
+  hosts: mklab
+  tasks:
+
+    - name: Install microk8s
+      community.general.snap:
+        name: microk8s
+        classic: true
+
+    - name: Get microk8s status
+      ansible.builtin.command:
+        cmd: microk8s status --yaml
+      changed_when: false
+      register: microk8s_status
+      delegate_to: '{{ microk8s_master }}'
+
+    - name: Display microk8s status
+      ansible.builtin.debug:
+        msg: '{{ microk8s_status.stdout | from_yaml }}'
+
+    - name: Get microk8s nodes
+      ansible.builtin.command:
+        cmd: 'microk8s kubectl get nodes -o yaml'
+      changed_when: false
+      register: microk8s_nodes
+      delegate_to: '{{ microk8s_master }}'
+
+    - name: Display microk8s nodes
+      ansible.builtin.debug:
+        msg: '{{ item.key }}: {{ item.value }}'
+      with_dict: '{{ microk8s_nodes.stdout | from yaml }}'
