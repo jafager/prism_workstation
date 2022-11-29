@@ -142,6 +142,7 @@
       ansible.builtin.apt:
         pkg:
           - make
+          - nmap
 
     - name: Create sudoers file
       ansible.builtin.copy:
