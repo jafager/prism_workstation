@@ -18,7 +18,7 @@
       changed_when: false
       register: lsb_release
 
-    - name: Add Terraform repository key
+    - name: Add Docker repository key
       ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
 
