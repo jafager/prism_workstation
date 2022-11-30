@@ -1,0 +1,61 @@
+---
+
+- name: Configure rkelab environment
+  hosts: rkelab
+  tasks:
+
+    - name: Install Docker repository prerequisite packages
+      ansible.builtin.apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+
+    - name: Get release name
+      ansible.builtin.command:
+        cmd: lsb_release -cs
+      changed_when: false
+      register: lsb_release
+
+    - name: Add Terraform repository key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+
+    - name: Install Docker repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://download.docker.com/linux/ubuntu {{ lsb_release.stdout }} stable'
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        update_cache: true
+
+    - name: Create docker group
+      ansible.builtin.group:
+        name: docker
+
+    - name: Add ansible_user to docker group
+      ansible.builtin.user:
+        name: '{{ ansible_user }}'
+        append: true
+        groups:
+          - docker
+
+    - name: Set required sysctl entry
+      ansible.posix.sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
+
+    - name: Allow TCP forwarding over SSH
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/allow_tcp_forwarding.conf
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          AllowTcpForwarding yes

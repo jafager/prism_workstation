@@ -8,3 +8,5 @@ terraform.tfstate
 rkelab/.terraform.lock.hcl
 rkelab/.terraform
 rkelab/terraform.tfstate.backup
+kube_config_cluster.yml
+cluster.rkestate

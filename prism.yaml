@@ -175,3 +175,23 @@
     - name: Install Nvidia proprietary drivers
       ansible.builtin.apt:
         name: nvidia-driver-520
+
+    - name: Install Terraform prerequisites
+      ansible.builtin.apt:
+        name: '{{ item }}'
+      loop:
+        - ca-certificates
+        - curl
+
+    - name: Add Kubernetes repository key
+      ansible.builtin.apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+
+    - name: Add Kubernetes repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
+
+    - name: Install kubectl
+      ansible.builtin.apt:
+        name: kubectl
+        update_cache: true
