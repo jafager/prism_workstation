@@ -1,12 +1,6 @@
-mklab/.terraform.lock.hcl
-mklab/.terraform
-mklab/terraform.tfstate
-mklab/terraform.tfstate.backup
 mklab/mklab_rsa
 mklab/mklab_rsa.pub
-terraform.tfstate
-rkelab/.terraform.lock.hcl
-rkelab/.terraform
-rkelab/terraform.tfstate.backup
+.terraform*
+terraform.tfstate*
 kube_config_cluster.yml
 cluster.rkestate
