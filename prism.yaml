@@ -195,3 +195,11 @@
       ansible.builtin.apt:
         name: kubectl
         update_cache: true
+
+    - name: Download RKE binary
+      ansible.builtin.get_url:
+        url: https://github.com/rancher/rke/releases/download/v1.4.1/rke_linux-amd64
+        dest: /usr/local/bin/rke
+        owner: root
+        group: root
+        mode: 0755
