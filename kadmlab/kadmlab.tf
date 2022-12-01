@@ -69,7 +69,7 @@ resource "libvirt_cloudinit_disk" "kadmlabnode" {
 resource "libvirt_domain" "kadmlabnode" {
     count = var.node_count
     name = "kadmlabnode${count.index + 1}"
-    vcpu = "1"
+    vcpu = "2"
     memory = "4096"
     disk {
         volume_id = libvirt_volume.kadmlabnode[count.index].id

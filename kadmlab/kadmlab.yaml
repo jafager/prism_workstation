@@ -1,0 +1,117 @@
+---
+
+- name: Configure kadmlab environment
+  hosts: kadmlab
+  gather_facts: false
+  tasks:
+
+    - name: Wait for kadmnode servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Install CRI-O prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - curl
+          - gnupg
+
+    - name: Add CRI-O repository keys
+      ansible.builtin.apt_key:
+        url: '{{ item }}'
+      loop:
+        - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/Release.key'
+        - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.25/xUbuntu_22.04/Release.key'
+
+    - name: Add CRI-O repositories
+      ansible.builtin.apt_repository:
+        repo: '{{ item }}'
+      loop:
+        - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /'
+        - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.25/xUbuntu_22.04/ /'
+
+    - name: Install CRI-O
+      ansible.builtin.apt:
+        pkg:
+          - cri-o
+          - cri-o-runc
+        update_cache: true
+
+    - name: Install Kubernetes prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+
+    - name: Install Kubernetes repository key
+      ansible.builtin.apt_key:
+        url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'
+
+    - name: Add Kubernetes repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
+
+    - name: Install kubelet, kubeadm, and kubectl
+      ansible.builtin.apt:
+        pkg:
+          - kubelet=1.25.4-00
+          - kubeadm=1.25.4-00
+          - kubectl=1.25.4-00
+        update_cache: true
+
+    # - name: example firewall rule
+    #   community.general.ufw:
+    #     comment:
+    #     default: allow/deny/reject
+    #     delete: true/false
+    #     direction: in/incoming/out/outgoing/routed
+    #     from_ip: address
+    #     from_port: port
+    #     insert: int
+    #     insert_relative_to: zero/first-ipv4/last-ipv4/first-ipv6/last-ipv6
+    #     interface: interface
+    #     interface_in: interface
+    #     interface_out: interface
+    #     log: true/false
+    #     logging: on/off/low/medium/high/full
+    #     name: profile in /etc/ufw/applications.d
+    #     proto: any/tcp/udp/ipv6/esp/ah/gre/igmp
+    #     route: true/false
+    #     rule: allow/deny/limit/reject
+    #     state: enabled/disabled/reloaded/reset
+    #     to_ip: address
+    #     to_port: port
+
+    - name: Disable firewall and reset to default settings
+      community.general.ufw:
+        state: reset
+
+    - name: Default deny
+      community.general.ufw:
+        default: deny
+
+    - name: Allow outgoing traffic
+      community.general.ufw:
+        direction: out
+        rule: allow
+
+    - name: Allow SSH from the hypervisor IP on the management network
+      community.general.ufw:
+        interface_in: ens3
+        from_ip: 192.168.252.1
+        port: 22
+        rule: allow
+
+    - name: Allow all incoming traffic from the cluster network
+      community.general.ufw:
+        interface_in: ens4
+        from_ip: 192.168.251.0/24
+        rule: allow
+
+    - name: Enable firewall
+      community.general.ufw:
+        state: enabled
