@@ -21,18 +21,64 @@ resource "libvirt_network" "kadmlab_management" {
     mode = "nat"
     domain = "kadmlab.prism.local"
     addresses = ["192.168.252.0/24"]
+    dns {
+        enabled = true
+        forwarders {
+            address = "8.8.8.8"
+        }
+        forwarders {
+            address = "8.8.4.4"
+        }
+        hosts {
+            hostname = "kadmlabnode1"
+            ip = "192.168.251.11"
+        }
+        hosts {
+            hostname = "kadmlabnode2"
+            ip = "192.168.251.12"
+        }
+        hosts {
+            hostname = "kadmlabnode3"
+            ip = "192.168.251.13"
+        }
+        hosts {
+            hostname = "kadmlabnode4"
+            ip = "192.168.251.14"
+        }
+        hosts {
+            hostname = "kadmlabnode5"
+            ip = "192.168.251.15"
+        }
+        hosts {
+            hostname = "kadmlabnode6"
+            ip = "192.168.251.16"
+        }
+        hosts {
+            hostname = "controlplane"
+            ip = "192.168.252.11"
+        }
+    }
+    dhcp {
+        enabled = false
+    }
 }
 
 resource "libvirt_network" "kadmlab_cluster" {
     name = "kadmlab_cluster"
-    mode = "nat"
+    mode = "none"
     addresses = ["192.168.251.0/24"]
+    dhcp {
+        enabled = false
+    }
 }
 
 resource "libvirt_network" "kadmlab_service" {
     name = "kadmlab_service"
-    mode = "nat"
+    mode = "none"
     addresses = ["192.168.250.0/24"]
+    dhcp {
+        enabled = false
+    }
 }
 
 resource "libvirt_pool" "kadmlab" {
@@ -63,7 +109,7 @@ resource "libvirt_cloudinit_disk" "kadmlabnode" {
     count = var.node_count
     name = "kadmlabnode${count.index + 1}.iso"
     user_data = templatefile("${path.module}/kadmlabnode_user_data.tftpl", { hostname = "kadmlabnode${count.index + 1}", fqdn = "kadmlabnode${count.index + 1}.kadmlab.prism.local", username = "jafager", password = "Ubuntu22.04", ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC9My5YdUN2wC+FC90bSCF6t3jrMGESv7+eafQETfD3t1bCwoPHpXywzeP6qVfgCxQQa7mmBT5sEOrJjtVw02QQA8C7vca+rprMOrN6rooCAZDlt8whoARv++MjgMnBset2QxuL5OoTOkLmVdw0rTubbxqf80CjZL/T7DVD04sS9CEQQOY7Qb9IzPtykATvKzalWLqT7GJNx+oMghGbAjx/AO4KyEwFgAEeT6vd72AtwsS7PKv46dL44IQSEg1T3Z6HVW0sF0/w9VMcujgwvBuveLGoRuH2kiniWiYSBOylbuTu1SMnKMHsJHm11aMqhnhZCB9fZPOdjYBuUZOMa0hiWq3WXq11Q+UMJurcQTFlB1bZf9ZBPwJzERiw4Z1eZwBC5JucAtajQYpsjRKskCKdixpkJ5l9oinKwfjYCnj+SjE+GeT7on3QA8iCtR4WCixdFVYszkfOX1SPd3mzRdohIjgAg3rWxOP/jkEXUm289F/uKAQUg5bIzIEJNAIfNWU= jafager@prism" })
-    network_config = templatefile("${path.module}/kadmlabnode_network_config.tftpl", { ip_addresses_1 = "[192.168.252.${10 + (count.index + 1)}/24]", gateway = "192.168.252.1", nameservers = "[8.8.8.8, 8.8.4.4]", ip_addresses_2 = "[192.168.251.${10 + (count.index + 1)}/24]", ip_addresses_3 = "[192.168.250.${10 + (count.index + 1)}/24]"})
+    network_config = templatefile("${path.module}/kadmlabnode_network_config.tftpl", { ip_addresses_1 = "[192.168.252.${10 + (count.index + 1)}/24]", gateway = "192.168.252.1", nameservers = "[192.168.252.1]", domains = "[kadmlab.prism.local]", ip_addresses_2 = "[192.168.251.${10 + (count.index + 1)}/24]", ip_addresses_3 = "[192.168.250.${10 + (count.index + 1)}/24]"})
 }
 
 resource "libvirt_domain" "kadmlabnode" {

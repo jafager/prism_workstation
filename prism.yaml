@@ -43,6 +43,7 @@
           [defaults]
           inventory = /home/jafager/projects/prism_workstation/inventory.yaml
           deprecation_warnings = false
+          forks = 6
 
     - name: Set time zone
       community.general.timezone:
@@ -203,3 +204,29 @@
         owner: root
         group: root
         mode: 0755
+
+    - name: Create SSH client config
+      ansible.builtin.copy:
+        dest: /home/jafager/.ssh/config
+        owner: jafager
+        group: jafager
+        mode: 0644
+        content: |
+          Host kadmlabnode1.kadmlab.prism.local kadmlabnode1
+              HostName 192.168.252.11
+              StrictHostKeyChecking no
+          Host kadmlabnode2.kadmlab.prism.local kadmlabnode2
+              HostName 192.168.252.12
+              StrictHostKeyChecking no
+          Host kadmlabnode3.kadmlab.prism.local kadmlabnode3
+              HostName 192.168.252.13
+              StrictHostKeyChecking no
+          Host kadmlabnode4.kadmlab.prism.local kadmlabnode4
+              HostName 192.168.252.14
+              StrictHostKeyChecking no
+          Host kadmlabnode5.kadmlab.prism.local kadmlabnode5
+              HostName 192.168.252.15
+              StrictHostKeyChecking no
+          Host kadmlabnode6.kadmlab.prism.local kadmlabnode6
+              HostName 192.168.252.16
+              StrictHostKeyChecking no
