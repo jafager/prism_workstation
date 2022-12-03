@@ -4,3 +4,4 @@ mklab/mklab_rsa.pub
 terraform.tfstate*
 kube_config_cluster.yml
 cluster.rkestate
+kadmlab/kubeconfig

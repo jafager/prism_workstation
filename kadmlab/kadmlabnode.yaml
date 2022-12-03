@@ -40,6 +40,12 @@
           - cri-o-runc
         update_cache: true
 
+    - name: Start and enable CRI-O
+      ansible.builtin.service:
+        name: crio
+        state: started
+        enabled: true
+
     - name: Install Kubernetes prerequisites
       ansible.builtin.apt:
         pkg:
@@ -62,29 +68,6 @@
           - kubeadm=1.25.4-00
           - kubectl=1.25.4-00
         update_cache: true
-
-    # - name: example firewall rule
-    #   community.general.ufw:
-    #     comment:
-    #     default: allow/deny/reject
-    #     delete: true/false
-    #     direction: in/incoming/out/outgoing/routed
-    #     from_ip: address
-    #     from_port: port
-    #     insert: int
-    #     insert_relative_to: zero/first-ipv4/last-ipv4/first-ipv6/last-ipv6
-    #     interface: interface
-    #     interface_in: interface
-    #     interface_out: interface
-    #     log: true/false
-    #     logging: on/off/low/medium/high/full
-    #     name: profile in /etc/ufw/applications.d
-    #     proto: any/tcp/udp/ipv6/esp/ah/gre/igmp
-    #     route: true/false
-    #     rule: allow/deny/limit/reject
-    #     state: enabled/disabled/reloaded/reset
-    #     to_ip: address
-    #     to_port: port
 
     - name: Disable firewall and reset to default settings
       community.general.ufw:
@@ -115,3 +98,43 @@
     - name: Enable firewall
       community.general.ufw:
         state: enabled
+
+    - name: Load br_netfilter kernel module on boot
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/br_netfilter.conf
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          br_netfilter
+
+    - name: Load br_netfilter kernel module immediately
+      community.general.modprobe:
+        name: br_netfilter
+
+    - name: Enable IP forwarding
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: 1
+
+    - name: Enable bridge-nf-call-iptables
+      ansible.posix.sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
+
+    - name: Run kubeadm init on initial control plane node
+      ansible.builtin.command:
+        cmd: >
+          /usr/bin/kubeadm init
+          --control-plane-endpoint=controlplane.kadmlab.prism.local
+          --pod-network-cidr=172.16.0.0/12
+          --apiserver-advertise-address={{ cluster_address }}
+          --upload-certs
+      when: initial_control_plane == inventory_hostname
+
+    - name: Download kubeconfig file
+      ansible.builtin.fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: kubeconfig
+        flat: true
+      when: initial_control_plane == inventory_hostname

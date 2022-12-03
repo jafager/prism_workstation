@@ -92,9 +92,9 @@
             balance roundrobin
             mode tcp
             default-server check maxconn 20
-            server klabadmnode1 192.168.251.11:22
-            server klabadmnode2 192.168.251.12:22
-            server klabadmnode3 192.168.251.13:22
+            server klabadmnode1 192.168.251.11:6443
+            server klabadmnode2 192.168.251.12:6443
+            server klabadmnode3 192.168.251.13:6443
       register: configure_haproxy
 
     - name: Restart haproxy if necessary

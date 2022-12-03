@@ -39,28 +39,36 @@ all:
           hosts:
             kadmlabnode1:
               ansible_host: 192.168.252.11
+              cluster_address: 192.168.251.11
             kadmlabnode2:
               ansible_host: 192.168.252.12
+              cluster_address: 192.168.251.12
             kadmlabnode3:
               ansible_host: 192.168.252.13
+              cluster_address: 192.168.251.13
             kadmlabnode4:
               ansible_host: 192.168.252.14
+              cluster_address: 192.168.251.14
             kadmlabnode5:
               ansible_host: 192.168.252.15
+              cluster_address: 192.168.251.15
             kadmlabnode6:
               ansible_host: 192.168.252.16
+              cluster_address: 192.168.251.16
+          vars:
+            initial_control_plane: kadmlabnode1
         kadmlablb:
           hosts:
             kadmlablb1:
               ansible_host: 192.168.252.21
               keepalived_state: MASTER
-              keepalived_priority: 120
+              keepalived_priority: 255
               keepalived_source_ip: 192.168.251.21
               keepalived_peer: 192.168.251.22
             kadmlablb2:
               ansible_host: 192.168.252.22
               keepalived_state: BACKUP
-              keepalived_priority: 100
+              keepalived_priority: 127
               keepalived_source_ip: 192.168.251.22
               keepalived_peer: 192.168.251.22
       vars:
