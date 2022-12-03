@@ -1,11 +1,11 @@
 ---
 
-- name: Configure kadmlab environment
-  hosts: kadmlab
+- name: Configure kadmlabnode servers
+  hosts: kadmlabnode
   gather_facts: false
   tasks:
 
-    - name: Wait for kadmnode servers to be available
+    - name: Wait for kadmlabnode servers to be available
       ansible.builtin.wait_for_connection:
         timeout: 180
         sleep: 10
