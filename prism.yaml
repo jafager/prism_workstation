@@ -237,3 +237,15 @@
           Host kadmlablb2.kadmlab.prism.local kadmlablb2
               HostName 192.168.252.22
               StrictHostKeyChecking no
+
+    - name: Add /etc/hosts entries
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.252.11 kadmlabnode1.kadmlab.prism.local kadmlabnode1
+          192.168.252.12 kadmlabnode2.kadmlab.prism.local kadmlabnode2
+          192.168.252.13 kadmlabnode3.kadmlab.prism.local kadmlabnode3
+          192.168.252.14 kadmlabnode4.kadmlab.prism.local kadmlabnode4
+          192.168.252.15 kadmlabnode5.kadmlab.prism.local kadmlabnode5
+          192.168.252.16 kadmlabnode6.kadmlab.prism.local kadmlabnode6
+          192.168.251.100 controlplane.kadmlab.prism.local controlplane

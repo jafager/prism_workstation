@@ -13,6 +13,16 @@
     - name: Gather facts
       ansible.builtin.setup:
 
+    - name: Update packages
+      ansible.builtin.apt:
+        name: '*'
+        update_cache: true
+      register: update_packages
+
+    - name: Reboot if packages updated
+      ansible.builtin.reboot: # noqa no-handler
+      when: update_packages.changed
+
     - name: Install keepalived
       ansible.builtin.apt:
         name: keepalived

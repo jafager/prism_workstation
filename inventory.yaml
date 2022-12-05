@@ -40,23 +40,30 @@ all:
             kadmlabnode1:
               ansible_host: 192.168.252.11
               cluster_address: 192.168.251.11
+              kubernetes_role: control plane
             kadmlabnode2:
               ansible_host: 192.168.252.12
               cluster_address: 192.168.251.12
+              kubernetes_role: control plane
             kadmlabnode3:
               ansible_host: 192.168.252.13
               cluster_address: 192.168.251.13
+              kubernetes_role: control plane
             kadmlabnode4:
               ansible_host: 192.168.252.14
               cluster_address: 192.168.251.14
+              kubernetes_role: worker
             kadmlabnode5:
               ansible_host: 192.168.252.15
               cluster_address: 192.168.251.15
+              kubernetes_role: worker
             kadmlabnode6:
               ansible_host: 192.168.252.16
               cluster_address: 192.168.251.16
+              kubernetes_role: worker
           vars:
             initial_control_plane: kadmlabnode1
+            certificate_key: c4babbd6051298815f1985c0997b5f6dc6114799cbe1d1a6b9c13692e369cd54
         kadmlablb:
           hosts:
             kadmlablb1:
