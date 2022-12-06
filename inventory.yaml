@@ -77,7 +77,7 @@ all:
               keepalived_state: BACKUP
               keepalived_priority: 127
               keepalived_source_ip: 192.168.251.22
-              keepalived_peer: 192.168.251.22
+              keepalived_peer: 192.168.251.21
       vars:
         ansible_user: jafager
         ansible_host_key_checking: false

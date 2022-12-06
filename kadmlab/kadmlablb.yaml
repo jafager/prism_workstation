@@ -23,57 +23,6 @@
       ansible.builtin.reboot: # noqa no-handler
       when: update_packages.changed
 
-    - name: Install keepalived
-      ansible.builtin.apt:
-        name: keepalived
-
-    - name: Configure keepalived for Kubernetes
-      ansible.builtin.copy:
-        dest: /etc/keepalived/keepalived.conf
-        owner: root
-        group: root
-        mode: 0644
-        content: |
-          #vrrp_script haproxy_controlplane {
-          #  script "/usr/bin/pgrep haproxy"
-          #  interval 2
-          #  rise 3
-          #  fall 2
-          #}
-          vrrp_instance controlplane {
-            interface ens4
-            state {{ keepalived_state }}
-            priority {{ keepalived_priority }}
-            virtual_router_id 20
-            #unicast_src_ip {{ keepalived_source_ip }}
-            #unicast peer {
-            #  {{ keepalived_peer }}
-            #}
-            authentication {
-              auth_type PASS
-              auth_pass mmq7rgzHtnvAHgMFiUvoHtRH3F7XAKFp
-            }
-          #  track_script {
-          #    haproxy_controlplane
-          #  }
-            virtual_ipaddress {
-              192.168.251.100/24 dev ens4 label ens4:1
-            }
-          }
-      register: configure_keepalived
-
-    - name: Restart keepalived if necessary
-      ansible.builtin.service: # noqa no-handler
-        name: keepalived
-        state: restarted
-      when: configure_keepalived.changed
-
-    - name: Start and enable keepalived
-      ansible.builtin.service:
-        name: keepalived
-        state: started
-        enabled: true
-
     - name: Install HAProxy prerequisites
       ansible.builtin.apt:
         pkg:
@@ -101,10 +50,9 @@
           backend controlplane
             balance roundrobin
             mode tcp
-            default-server check maxconn 20
-            server klabadmnode1 192.168.251.11:6443
-            server klabadmnode2 192.168.251.12:6443
-            server klabadmnode3 192.168.251.13:6443
+            server klabadmnode1 192.168.251.11:6443 check
+            server klabadmnode2 192.168.251.12:6443 check
+            server klabadmnode3 192.168.251.13:6443 check
       register: configure_haproxy
 
     - name: Restart haproxy if necessary
@@ -116,5 +64,58 @@
     - name: Start and enable haproxy
       ansible.builtin.service:
         name: haproxy
+        state: started
+        enabled: true
+
+    - name: Install keepalived
+      ansible.builtin.apt:
+        name: keepalived
+
+    - name: Configure keepalived for Kubernetes
+      ansible.builtin.copy:
+        dest: /etc/keepalived/keepalived.conf
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          global_defs {
+            enable_script_security
+            script_user root
+          }
+          vrrp_script haproxy_controlplane {
+            script "/usr/bin/pgrep haproxy"
+            interval 2
+          }
+          vrrp_instance controlplane {
+            interface ens4
+            state {{ keepalived_state }}
+            priority {{ keepalived_priority }}
+            virtual_router_id 20
+            unicast_src_ip {{ keepalived_source_ip }}
+            unicast_peer {
+              {{ keepalived_peer }}
+            }
+            authentication {
+              auth_type PASS
+              auth_pass mmq7rgzH
+            }
+            track_script {
+              haproxy_controlplane
+            }
+            virtual_ipaddress {
+              192.168.251.100/24 dev ens4 label ens4:1
+            }
+          }
+      register: configure_keepalived
+
+    - name: Restart keepalived if necessary
+      ansible.builtin.service: # noqa no-handler
+        name: keepalived
+        state: restarted
+      when: configure_keepalived.changed
+
+    - name: Start and enable keepalived
+      ansible.builtin.service:
+        name: keepalived
         state: started
         enabled: true

@@ -183,10 +183,67 @@
           --discovery-token-ca-cert-hash sha256:{{ ca_certificate.public_key_fingerprints.sha256 | replace(":", "") }}
       when: (kubernetes_role == 'worker')
 
-    - name: Install calicoctl
+    # - name: Install calicoctl
+    #   ansible.builtin.get_url:
+    #     url: https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
+    #     dest: /usr/local/bin/calicoctl
+    #     owner: root
+    #     group: root
+    #     mode: 0755
+
+    - name: Download Calico operator manifest
       ansible.builtin.get_url:
-        url: https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
-        dest: /usr/local/bin/calicoctl
+        url: https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
+        dest: /tmp/tigera-operator.yaml
         owner: root
         group: root
-        mode: 0755
+        mode: 0644
+      when: initial_control_plane == inventory_hostname
+
+    - name: Create Calico operator
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf create -f /tmp/tigera-operator.yaml
+      when: initial_control_plane == inventory_hostname
+
+    - name: Delete Calico operator manifest
+      ansible.builtin.file:
+        path: /tmp/tigera-operator.yaml
+        state: absent
+      when: initial_control_plane == inventory_hostname
+
+    - name: Copy Calico custom resources manifest
+      ansible.builtin.copy:
+        dest: /tmp/custom-resources.yaml
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          apiVersion: operator.tigera.io/v1
+          kind: Installation
+          metadata:
+            name: default
+          spec:
+            calicoNetwork:
+              bgp: Disabled
+              ipPools:
+              - blockSize: 26
+                cidr: 172.16.0.0/12
+                encapsulation: VXLAN
+          ---
+          apiVersion: operator.tigera.io/v1
+          kind: APIServer
+          metadata:
+            name: default
+          spec: {}
+      when: initial_control_plane == inventory_hostname
+
+    - name: Create Calico custom resources
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf create -f /tmp/custom-resources.yaml
+      when: initial_control_plane == inventory_hostname
+
+    - name: Delete Calico custom resources manifest
+      ansible.builtin.file:
+        path: /tmp/custom-resources.yaml
+        state: absent
+      when: initial_control_plane == inventory_hostname
