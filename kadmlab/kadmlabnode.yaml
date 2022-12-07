@@ -30,11 +30,17 @@
           - gnupg
 
     - name: Add CRI-O repository keys
-      ansible.builtin.apt_key:
-        url: '{{ item }}'
+      ansible.builtin.get_url:
+        url: '{{ item.url }}'
+        dest: /etc/apt/trusted.gpg.d/'{{ item.keyring }}'
+        owner: root
+        group: root
+        mode: 0644
       loop:
-        - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/Release.key'
-        - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.25/xUbuntu_22.04/Release.key'
+        - url: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/Release.key'
+          keyring: 'libcontainers-archive-keyring.gpg'
+        - url: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.25/xUbuntu_22.04/Release.key'
+          keyring: 'libcontainers-crio-archive-keyring.gpg'
 
     - name: Add CRI-O repositories
       ansible.builtin.apt_repository:
@@ -64,8 +70,12 @@
           - curl
 
     - name: Install Kubernetes repository key
-      ansible.builtin.apt_key:
+      ansible.builtin.get_url:
         url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'
+        dest: /etc/apt/trusted.gpg.d/apt-key.gpg
+        owner: root
+        group: root
+        mode: 0644
 
     - name: Add Kubernetes repository
       ansible.builtin.apt_repository:
