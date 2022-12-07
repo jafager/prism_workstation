@@ -1,14 +1,14 @@
 reset:
 	terraform destroy -auto-approve
 	terraform apply -auto-approve
-	virsh snapshot-create-as --domain kadmlabnode1 --name "make snapshot"
-	virsh snapshot-create-as --domain kadmlabnode2 --name "make snapshot"
-	virsh snapshot-create-as --domain kadmlabnode3 --name "make snapshot"
-	virsh snapshot-create-as --domain kadmlabnode4 --name "make snapshot"
-	virsh snapshot-create-as --domain kadmlabnode5 --name "make snapshot"
-	virsh snapshot-create-as --domain kadmlabnode6 --name "make snapshot"
-	virsh snapshot-create-as --domain kadmlablb1 --name "make snapshot"
-	virsh snapshot-create-as --domain kadmlablb2 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlabnode1 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlabnode2 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlabnode3 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlabnode4 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlabnode5 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlabnode6 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlablb1 --name "make snapshot"
+	# virsh snapshot-create-as --domain kadmlablb2 --name "make snapshot"
 	ansible-playbook kadmlablb.yaml
 	ansible-playbook kadmlabnode.yaml
 
