@@ -248,4 +248,68 @@
           192.168.252.14 kadmlabnode4.kadmlab.prism.local kadmlabnode4
           192.168.252.15 kadmlabnode5.kadmlab.prism.local kadmlabnode5
           192.168.252.16 kadmlabnode6.kadmlab.prism.local kadmlabnode6
+          192.168.252.11 kadmlablb1.kadmlab.prism.local kadmlablb1
+          192.168.252.12 kadmlablb2.kadmlab.prism.local kadmlablb2
           192.168.251.100 controlplane.kadmlab.prism.local controlplane
+
+    - name: Install OpenVPN
+      ansible.builtin.apt:
+        name: openvpn
+
+    - name: Disable OpenVPN (we don't want it to start automatically)
+      ansible.builtin.service:
+        name: openvpn@client
+        enabled: false
+
+    - name: Copy OpenVPN client configuration file
+      ansible.builtin.copy:
+        dest: /etc/openvpn/client.conf
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          remote vpn.tpa02.hosting.com 443 tcp-client
+          resolv-retry infinite
+          tls-client
+          auth-user-pass
+          auth-nocache
+          reneg-sec 0
+          static-challenge "Provide second factor:" 1
+          pull
+          dev tun
+          persist-tun
+          nobind
+          cipher AES-128-CBC
+          script-security 2
+          tls-cipher "DEFAULT:@SECLEVEL=0"
+          dhcp-option DNS 76.12.32.110
+          dhcp-option DNS 208.112.89.187
+          <ca>
+          -----BEGIN CERTIFICATE-----
+          MIIEgDCCA2igAwIBAgIJAMwBR9SBAqrGMA0GCSqGSIb3DQEBBQUAMIGFMRAwDgYD
+          VQQDDAdHVlBOIENBMQswCQYDVQQGEwJVUzEQMA4GA1UECAwHRmxvcmlkYTEOMAwG
+          A1UEBwwFVGFtcGExHDAaBgNVBAoME0hvc3R3YXkgQ29ycG9yYXRpb24xJDAiBgkq
+          hkiG9w0BCQEWFXJvb3RAZ3Zwbi5ob3N0d2F5Lm5ldDAeFw0xNTExMDcxNzU2MTJa
+          Fw0yNTExMDQxNzU2MTJaMIGFMRAwDgYDVQQDDAdHVlBOIENBMQswCQYDVQQGEwJV
+          UzEQMA4GA1UECAwHRmxvcmlkYTEOMAwGA1UEBwwFVGFtcGExHDAaBgNVBAoME0hv
+          c3R3YXkgQ29ycG9yYXRpb24xJDAiBgkqhkiG9w0BCQEWFXJvb3RAZ3Zwbi5ob3N0
+          d2F5Lm5ldDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALqqqFos2o7x
+          /+QVZF8kphkdyxFdsqbxfaj3RmfKMo/97gTmOkrPqufLfnZmDoOuEHGB1fti9Q6g
+          /YivJpAmSCRdf4ELAjWaoIWdlfwsokW7Kh1hzlBeQTsv3HKFVhdZ37mySkezrv+K
+          IycZ/XlJb4JiLf2aQ6UpAo3cgFPQgawaV8W73IM5ga1CO6oTMbRUG6DjqvR9uoxk
+          sRQtsjxUlcCB8WUQVB2eVBr7RzZVkYzTYO7lmHs8mZ13u7dPr+uK8ZBJlJ/ehwsn
+          Qf9NXsUcs/l9K/2rRcDA0j0Pl6JO+PPswmjiPn80U1F7nGMD242kA+Ns86p1KQg0
+          TXk5viqrQgcCAwEAAaOB8DCB7TAdBgNVHQ4EFgQUTeucSCEdo22czigzMIqN3zJm
+          4P0wgboGA1UdIwSBsjCBr4AUTeucSCEdo22czigzMIqN3zJm4P2hgYukgYgwgYUx
+          EDAOBgNVBAMMB0dWUE4gQ0ExCzAJBgNVBAYTAlVTMRAwDgYDVQQIDAdGbG9yaWRh
+          MQ4wDAYDVQQHDAVUYW1wYTEcMBoGA1UECgwTSG9zdHdheSBDb3Jwb3JhdGlvbjEk
+          MCIGCSqGSIb3DQEJARYVcm9vdEBndnBuLmhvc3R3YXkubmV0ggkAzAFH1IECqsYw
+          DwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQUFAAOCAQEABhP6Z5iGCiv3kE5v
+          os/DRTGabsD72cF593yBm+wj96xcLXltikplibhnoOoOsHaeRIwpA+dICFTU2a8B
+          0CfCFjSKz4HCXnuzMV47zK+hbo7LijDkwowM4YL3qFxcxxnq6hdI4zvH9/jsC8K7
+          2oA3awrt3LwRFKKZ2s3A5aWUzXVTxFhMbK/7hXeAPRZ/BYUZJJa7fvf/pVUal4sg
+          Pg7T23nZQ+ZugIxoODTRGFvq+ODZT/FACQbe10Ubh4j1jyhSkLJ2VLzmmvzjqSCn
+          4D7tO9PKrviCzzxZZfFVe2IIBUjDELLSQUkdOrmNJppQv2EaIQM1VhEr+Wx+V0X+
+          O4kOOA==
+          -----END CERTIFICATE-----
+          </ca>
