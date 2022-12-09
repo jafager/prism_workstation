@@ -258,8 +258,12 @@
 
     - name: Disable OpenVPN (we don't want it to start automatically)
       ansible.builtin.service:
-        name: openvpn@client
+        name: '{{ item }}'
         enabled: false
+      loop:
+        - openvpn
+        - openvpn@client
+        - openvpn@server
 
     - name: Copy OpenVPN client configuration file
       ansible.builtin.copy:
