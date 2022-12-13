@@ -191,13 +191,6 @@
         flat: true
       when: initial_control_plane == inventory_hostname
 
-    # - name: Generate join token
-    #   ansible.builtin.command:
-    #     cmd: kubeadm token create
-    #   register: kubeadm_token_create
-    #   delegate_to: '{{ initial_control_plane }}'
-    #   when: inventory_hostname != initial_control_plane
-
     - name: Generate CA certificate hash
       community.crypto.x509_certificate_info:
         path: /etc/kubernetes/pki/ca.crt

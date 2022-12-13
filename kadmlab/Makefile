@@ -2,6 +2,7 @@ reset:
 	terraform destroy -auto-approve
 	terraform apply -auto-approve
 	ansible-playbook kadmlablb.yaml
+	ansible-playbook kadmlabstor.yaml
 	ansible-playbook kadmlabnode.yaml
 
 rebuild:
