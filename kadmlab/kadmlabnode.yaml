@@ -165,8 +165,8 @@
           apiVersion: kubeadm.k8s.io/v1beta3
           kind: ClusterConfiguration
           networking:
-            serviceSubnet: "192.168.250.0/24"
-            podSubnet: "172.16.0.0/12"
+            serviceSubnet: "172.16.0.0/16"
+            podSubnet: "172.17.0.0/16"
           controlPlaneEndpoint: "controlplane.kadmlab.prism.local:6443"
           apiServer:
             certSANs:
@@ -308,7 +308,7 @@
               bgp: Disabled
               ipPools:
               - blockSize: 26
-                cidr: 172.16.0.0/12
+                cidr: 172.17.0.0/16
                 encapsulation: VXLAN
               nodeAddressAutodetectionV4:
                 kubernetes: NodeInternalIP

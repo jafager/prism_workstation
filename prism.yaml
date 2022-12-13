@@ -154,7 +154,7 @@
         mode: 0644
         content: 'jafager ALL = (ALL) NOPASSWD: ALL'
 
-    - name: Create shell functions for managing prism configuration
+    - name: Manage .bashrc
       ansible.builtin.blockinfile:
         path: /home/jafager/.bashrc
         block: |
@@ -164,6 +164,7 @@
           function prism {
             ansible-playbook -i /home/jafager/projects/prism_workstation/inventory.yaml /home/jafager/projects/prism_workstation/prism.yaml
           }
+          export KUBECONFIG=/home/jafager/projects/prism_workstation/kadmlab/kubeconfig
 
     - name: Install Visual Studio Code
       community.general.snap:
@@ -321,3 +322,9 @@
           O4kOOA==
           -----END CERTIFICATE-----
           </ca>
+
+    - name: Install Remmina RDP client
+      ansible.builtin.apt:
+        pkg:
+          - remmina
+          - remmina-plugin-rdp
