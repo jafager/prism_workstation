@@ -1,0 +1,144 @@
+---
+
+- name: Configure deplab servers
+  hosts: deplab
+  gather_facts: false
+  tasks:
+
+    - name: Wait for deplab servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Update packages
+      ansible.builtin.apt:
+        name: '*'
+        update_cache: true
+      register: update_packages
+
+    - name: Reboot if packages updated
+      ansible.builtin.reboot: # noqa no-handler
+      when: update_packages.changed
+
+    - name: Create TFTP directory
+      ansible.builtin.file:
+        path: /pxeboot
+        owner: root
+        group: root
+        mode: 0755
+        state: directory
+
+    - name: Install pxelinux
+      ansible.builtin.apt:
+        pkg:
+          - pxelinux
+          - syslinux-common
+
+    - name: Copy pxelinux files to TFTP directory
+      ansible.builtin.copy:
+        src: '{{ item }}'
+        dest: /pxeboot
+        owner: root
+        group: root
+        mode: 0644
+        directory_mode: 0755
+        remote_src: true
+      loop:
+        - /usr/lib/PXELINUX/pxelinux.0
+
+    - name: Copy syslinux files to TFTP directory
+      ansible.posix.synchronize:
+        src: /usr/lib/syslinux/modules/bios/
+        dest: /pxeboot
+        archive: true
+      delegate_to: '{{ inventory_hostname }}'
+
+    - name: Create pxelinux.cfg directory
+      ansible.builtin.file:
+        path: /pxeboot/pxelinux.cfg
+        owner: root
+        group: root
+        mode: 0755
+        state: directory
+
+    - name: Configure pxelinux
+      ansible.builtin.copy:
+        dest: /pxeboot/pxelinux.cfg/default
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          DEFAULT menu.c32
+          PROMPT 0
+          MENU TITLE PXE Menu
+          TIMEOUT 0
+          LABEL Ubuntu2204
+            MENU LABEL Install Ubuntu Server 22.04.1 LTS
+            KERNEL ubuntu-22.04.1-live-server-amd64/casper/vmlinuz
+            APPEND initrd=ubuntu-22.04.1-live-server-amd64/casper/initrd boot=casper maybe-ubiquity netboot=nfs ip=dhcp nfsroot=192.168.248.11/ubuntu-22.04.1-live-server-amd64 quiet splash ---
+
+    - name: Install dnsmasq
+      ansible.builtin.apt:
+        name: dnsmasq
+
+    - name: Configure dnsmasq
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.conf
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          port=0
+          interface=ens4
+          bind-interfaces
+          dhcp-range=ens4,192.168.248.200,192.168.248.249,255.255.255.0,5m
+          dhcp-option=option:router,192.168.248.11
+          dhcp-option=option:dns-server,8.8.8.8
+          dhcp-option=option:dns-server,8.8.4.4
+          enable-tftp
+          tftp-root=/pxeboot
+          dhcp-boot=pxelinux.0
+      register: configure_dnsmasq
+
+    - name: Restart dnsmaq if configuration changed
+      ansible.builtin.service: # noqa no-handler
+        name: dnsmasq
+        state: restarted
+      when: configure_dnsmasq.changed
+
+    - name: Start and enable dnsmasq
+      ansible.builtin.service:
+        name: dnsmasq
+        state: started
+        enabled: true
+
+    - name: Copy Ubuntu ISO contents to TFTP directory
+      ansible.posix.synchronize:
+        src: ubuntu-22.04.1-live-server-amd64
+        dest: /pxeboot
+        archive: true
+
+    - name: Install NFS server
+      ansible.builtin.apt:
+        name: nfs-kernel-server
+
+    - name: Add NFS export
+      ansible.builtin.lineinfile:
+        dest: /etc/exports
+        regex: '^\s*/pxeboot\b.*$'
+        line: '/pxeboot 192.168.248.0/24(ro)'
+      register: add_nfs_export
+
+    - name: Start and enable NFS server
+      ansible.builtin.service:
+        name: nfs-server
+        state: started
+        enabled: true
+
+    - name: Reload exports if export file changed
+      ansible.builtin.command: # noqa no-handler
+        cmd: exportfs -r
+      when: add_nfs_export.changed

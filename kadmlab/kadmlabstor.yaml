@@ -23,7 +23,7 @@
       ansible.builtin.reboot: # noqa no-handler
       when: update_packages.changed
 
-    - name: Create mount point
+    - name: Create NFS directory
       ansible.builtin.file:
         path: /mnt/nfs
         owner: root

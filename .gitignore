@@ -5,3 +5,4 @@ terraform.tfstate*
 kube_config_cluster.yml
 cluster.rkestate
 kadmlab/kubeconfig
+ubuntu-22.04.1-live-server-amd64*

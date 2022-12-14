@@ -57,6 +57,22 @@ resource "libvirt_volume" "deplabserver" {
     depends_on = [libvirt_volume.ubuntu2204]
 }
 
+resource "libvirt_volume" "deplabclient1" {
+    name = "deplabclient1.qcow2"
+    pool = "deplab"
+    format = "qcow2"
+    size = 32 * 1024 * 1024 * 1024
+    depends_on = [libvirt_pool.deplab]
+}
+
+resource "libvirt_volume" "deplabclient2" {
+    name = "deplabclient2.qcow2"
+    pool = "deplab"
+    format = "qcow2"
+    size = 32 * 1024 * 1024 * 1024
+    depends_on = [libvirt_pool.deplab]
+}
+
 resource "libvirt_cloudinit_disk" "deplabserver" {
     name = "deplabserver.iso"
     user_data = file("${path.module}/deplabserver_user_data")
@@ -78,4 +94,36 @@ resource "libvirt_domain" "deplabserver" {
     }
     cloudinit = libvirt_cloudinit_disk.deplabserver.id
     depends_on = [libvirt_volume.deplabserver, libvirt_network.deplab_external, libvirt_network.deplab_internal]
+}
+
+resource "libvirt_domain" "deplabclient1" {
+    name = "deplabclient1"
+    vcpu = "1"
+    memory = "4096"
+    disk {
+        volume_id = libvirt_volume.deplabclient1.id
+    }
+    network_interface {
+        network_id = libvirt_network.deplab_internal.id
+    }
+    boot_device {
+        dev = [ "hd", "network" ]
+    }
+    depends_on = [libvirt_volume.deplabclient1, libvirt_network.deplab_internal]
+}
+
+resource "libvirt_domain" "deplabclient2" {
+    name = "deplabclient2"
+    vcpu = "1"
+    memory = "4096"
+    disk {
+        volume_id = libvirt_volume.deplabclient2.id
+    }
+    network_interface {
+        network_id = libvirt_network.deplab_internal.id
+    }
+    boot_device {
+        dev = [ "hd", "network" ]
+    }
+    depends_on = [libvirt_volume.deplabclient2, libvirt_network.deplab_internal]
 }
