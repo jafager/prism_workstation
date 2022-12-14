@@ -328,3 +328,18 @@
         pkg:
           - remmina
           - remmina-plugin-rdp
+
+    - name: Install Microsoft repository prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - software-properties-common
+
+    - name: Install Microsoft repository package
+      ansible.builtin.apt:
+        deb: https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+
+    - name: Install PowerShell
+      ansible.builtin.apt:
+        name: powershell
+        update_cache: true
