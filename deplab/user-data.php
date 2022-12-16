@@ -1,3 +1,31 @@
+<?php
+
+  $hostname  = isset($_GET['hostname'])  ? $_GET['hostname']  : 'localhost';
+  $ipaddress = isset($_GET['ipaddress']) ? $_GET['ipaddress'] : '127.0.0.1';
+  $maskbits  = isset($_GET['maskbits'])  ? $_GET['maskbits']  : '8';
+  $data      = isset($_GET['data'])      ? $_GET['data']      : 'unspecified';
+
+  if ($data == 'vendor-data')
+  {
+    print("# no vendor data\n");
+    exit();
+  }
+  elseif ($data == 'meta-data')
+  {
+    print("# no meta data\n");
+    exit();
+  }
+  elseif ($data == 'user-data')
+  {
+    // Don't exit, so the rest of the content gets emitted
+  }
+  else
+  {
+    print("# invalid request\n");
+    exit();
+  }
+
+?>
 #cloud-config
 autoinstall:
   apt:
@@ -15,7 +43,7 @@ autoinstall:
   drivers:
     install: false
   identity:
-    hostname: <?php print($_GET["hostname"]); print ("\n"); ?>
+    hostname: <?php printf("%s\n", $hostname); ?>
     password: $6$36cwdjJBC71W2L1G$FKwol67dwqPQwC2zeLsEZc3EWyUgU0zC7s4AncLM9cz20f4hbXK0sdE97IYbxhbVe5GH0LvIhVxZWcNt8kzE41
     realname: Jason A. Fager
     username: jafager
@@ -30,7 +58,7 @@ autoinstall:
     ethernets:
       ens3:
         addresses:
-        - <?php print($_GET["ipaddress"]); print("\n"); ?>
+        - <?php printf("%s/%s\n", $ipaddress, $maskbits); ?>
         gateway4: 192.168.248.11
         nameservers:
           addresses:
@@ -132,5 +160,5 @@ autoinstall:
       swap: 0
   updates: security
   timezone: America/New_York
-  shutdown: poweroff
+  shutdown: reboot
   version: 1

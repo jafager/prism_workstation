@@ -13,7 +13,7 @@ provider "libvirt" {
 variable "client_count" {
     type = number
     description = "The number of clients to create."
-    default = 6
+    default = 4
 }
 
 resource "libvirt_network" "deplab_external" {

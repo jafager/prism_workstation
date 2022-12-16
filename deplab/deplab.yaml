@@ -72,20 +72,20 @@
           DEFAULT menu.c32
           PROMPT 0
           MENU TITLE PXE Menu
-          TIMEOUT 0
+          TIMEOUT 60
           LABEL Ubuntu2204
             MENU LABEL Install Ubuntu Server 22.04.1 LTS
             KERNEL vmlinuz
             INITRD initrd
-            APPEND url=http://192.168.248.11/ubuntu-22.04.1-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://192.168.248.11/user-data.php?hostname={{ item.hostname }}&ipaddress={{ item.ipaddress }} cloud-config-url=/dev/null ip=dhcp fsck.mode=skip ---
+            APPEND url=http://192.168.248.11/ubuntu-22.04.1-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://192.168.248.11/user-data.php?hostname={{ item.hostname }}&ipaddress={{ item.ipaddress }}&data= cloud-config-url=/dev/null ip=dhcp fsck.mode=skip ---
         # yamllint enable rule:line-length
       loop:
-        - {macaddress: 'aa-bb-cc-dd-ee-00', hostname: 'deplabclient1', ipaddress: '192.168.248.21/24'}
-        - {macaddress: 'aa-bb-cc-dd-ee-01', hostname: 'deplabclient2', ipaddress: '192.168.248.22/24'}
-        - {macaddress: 'aa-bb-cc-dd-ee-02', hostname: 'deplabclient3', ipaddress: '192.168.248.23/24'}
-        - {macaddress: 'aa-bb-cc-dd-ee-03', hostname: 'deplabclient4', ipaddress: '192.168.248.24/24'}
-        - {macaddress: 'aa-bb-cc-dd-ee-04', hostname: 'deplabclient5', ipaddress: '192.168.248.25/24'}
-        - {macaddress: 'aa-bb-cc-dd-ee-05', hostname: 'deplabclient6', ipaddress: '192.168.248.26/24'}
+        - {macaddress: 'aa-bb-cc-dd-ee-00', hostname: 'deplabclient1', ipaddress: '192.168.248.21'}
+        - {macaddress: 'aa-bb-cc-dd-ee-01', hostname: 'deplabclient2', ipaddress: '192.168.248.22'}
+        - {macaddress: 'aa-bb-cc-dd-ee-02', hostname: 'deplabclient3', ipaddress: '192.168.248.23'}
+        - {macaddress: 'aa-bb-cc-dd-ee-03', hostname: 'deplabclient4', ipaddress: '192.168.248.24'}
+        - {macaddress: 'aa-bb-cc-dd-ee-04', hostname: 'deplabclient5', ipaddress: '192.168.248.25'}
+        - {macaddress: 'aa-bb-cc-dd-ee-05', hostname: 'deplabclient6', ipaddress: '192.168.248.26'}
 
     - name: Install dnsmasq
       ansible.builtin.apt:
