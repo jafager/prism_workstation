@@ -10,6 +10,12 @@ provider "libvirt" {
     uri = "qemu:///system"
 }
 
+variable "client_count" {
+    type = number
+    description = "The number of clients to create."
+    default = 6
+}
+
 resource "libvirt_network" "deplab_external" {
     name = "deplab_external"
     mode = "nat"
@@ -57,16 +63,9 @@ resource "libvirt_volume" "deplabserver" {
     depends_on = [libvirt_volume.ubuntu2204]
 }
 
-resource "libvirt_volume" "deplabclient1" {
-    name = "deplabclient1.qcow2"
-    pool = "deplab"
-    format = "qcow2"
-    size = 32 * 1024 * 1024 * 1024
-    depends_on = [libvirt_pool.deplab]
-}
-
-resource "libvirt_volume" "deplabclient2" {
-    name = "deplabclient2.qcow2"
+resource "libvirt_volume" "deplabclient" {
+    count = var.client_count
+    name = "deplabclient${count.index + 1}.qcow2"
     pool = "deplab"
     format = "qcow2"
     size = 32 * 1024 * 1024 * 1024
@@ -96,34 +95,20 @@ resource "libvirt_domain" "deplabserver" {
     depends_on = [libvirt_volume.deplabserver, libvirt_network.deplab_external, libvirt_network.deplab_internal]
 }
 
-resource "libvirt_domain" "deplabclient1" {
-    name = "deplabclient1"
+resource "libvirt_domain" "deplabclient" {
+    count = var.client_count
+    name = "deplabclient${count.index + 1}"
     vcpu = "1"
     memory = "4096"
     disk {
-        volume_id = libvirt_volume.deplabclient1.id
+        volume_id = libvirt_volume.deplabclient[count.index].id
     }
     network_interface {
         network_id = libvirt_network.deplab_internal.id
+        mac = format("AA:BB:CC:DD:EE:%02X", count.index)
     }
     boot_device {
         dev = [ "hd", "network" ]
     }
-    depends_on = [libvirt_volume.deplabclient1, libvirt_network.deplab_internal]
-}
-
-resource "libvirt_domain" "deplabclient2" {
-    name = "deplabclient2"
-    vcpu = "1"
-    memory = "4096"
-    disk {
-        volume_id = libvirt_volume.deplabclient2.id
-    }
-    network_interface {
-        network_id = libvirt_network.deplab_internal.id
-    }
-    boot_device {
-        dev = [ "hd", "network" ]
-    }
-    depends_on = [libvirt_volume.deplabclient2, libvirt_network.deplab_internal]
+    depends_on = [libvirt_volume.deplabclient, libvirt_network.deplab_internal]
 }

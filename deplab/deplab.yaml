@@ -63,7 +63,7 @@
 
     - name: Configure pxelinux
       ansible.builtin.copy:
-        dest: /pxeboot/pxelinux.cfg/default
+        dest: '/pxeboot/pxelinux.cfg/01-{{ item.macaddress }}'
         owner: root
         group: root
         mode: 0644
@@ -77,8 +77,15 @@
             MENU LABEL Install Ubuntu Server 22.04.1 LTS
             KERNEL vmlinuz
             INITRD initrd
-            APPEND url=http://192.168.248.11/ubuntu-22.04.1-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://192.168.248.11/ cloud-config-url=/dev/null ip=dhcp fsck.mode=skip ---
+            APPEND url=http://192.168.248.11/ubuntu-22.04.1-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://192.168.248.11/user-data.php?hostname={{ item.hostname }}&ipaddress={{ item.ipaddress }} cloud-config-url=/dev/null ip=dhcp fsck.mode=skip ---
         # yamllint enable rule:line-length
+      loop:
+        - {macaddress: 'aa-bb-cc-dd-ee-00', hostname: 'deplabclient1', ipaddress: '192.168.248.21/24'}
+        - {macaddress: 'aa-bb-cc-dd-ee-01', hostname: 'deplabclient2', ipaddress: '192.168.248.22/24'}
+        - {macaddress: 'aa-bb-cc-dd-ee-02', hostname: 'deplabclient3', ipaddress: '192.168.248.23/24'}
+        - {macaddress: 'aa-bb-cc-dd-ee-03', hostname: 'deplabclient4', ipaddress: '192.168.248.24/24'}
+        - {macaddress: 'aa-bb-cc-dd-ee-04', hostname: 'deplabclient5', ipaddress: '192.168.248.25/24'}
+        - {macaddress: 'aa-bb-cc-dd-ee-05', hostname: 'deplabclient6', ipaddress: '192.168.248.26/24'}
 
     - name: Install dnsmasq
       ansible.builtin.apt:
@@ -145,149 +152,14 @@
           - casper/vmlinuz
           - casper/initrd
 
-    - name: Create autoinstall user data file
+    - name: Create autoinstall user data page
       ansible.builtin.copy:
-        dest: /var/www/html/user-data
+        src: user-data.php
+        dest: /var/www/html/user-data.php
         owner: root
         group: root
         mode: 0644
-        content: |
-          #cloud-config
-          autoinstall:
-            apt:
-              disable_components: []
-              geoip: true
-              preserve_sources_list: false
-              primary:
-              - arches:
-                - amd64
-                - i386
-                uri: http://us.archive.ubuntu.com/ubuntu
-              - arches:
-                - default
-                uri: http://ports.ubuntu.com/ubuntu-ports
-            drivers:
-              install: false
-            identity:
-              hostname: deplabclient1
-              password: $6$36cwdjJBC71W2L1G$FKwol67dwqPQwC2zeLsEZc3EWyUgU0zC7s4AncLM9cz20f4hbXK0sdE97IYbxhbVe5GH0LvIhVxZWcNt8kzE41
-              realname: Jason A. Fager
-              username: jafager
-            kernel:
-              package: linux-generic
-            keyboard:
-              layout: us
-              toggle: null
-              variant: ''
-            locale: en_US.UTF-8
-            network:
-              ethernets:
-                ens3:
-                  addresses:
-                  - 192.168.248.21
-                  gateway4: 192.168.248.11
-                  nameservers:
-                    addresses:
-                    - 8.8.8.8
-                    - 8.8.4.4
-              version: 2
-            source:
-              id: synthesized
-              search_drivers: false
-            ssh:
-              allow-pw: true
-              authorized-keys: []
-              install-server: true
-            storage:
-              config:
-              - ptable: gpt
-                path: /dev/sda
-                wipe: superblock-recursive
-                preserve: false
-                name: ''
-                grub_device: true
-                type: disk
-                id: disk-sda
-              - device: disk-sda
-                size: 1048576
-                flag: bios_grub
-                number: 1
-                preserve: false
-                grub_device: false
-                offset: 1048576
-                type: partition
-                id: partition-0
-              - device: disk-sda
-                size: 1073741824
-                wipe: superblock
-                number: 2
-                preserve: false
-                grub_device: false
-                offset: 2097152
-                type: partition
-                id: partition-1
-              - fstype: ext4
-                volume: partition-1
-                preserve: false
-                type: format
-                id: format-0
-              - device: disk-sda
-                size: -1
-                wipe: superblock
-                number: 3
-                preserve: false
-                grub_device: false
-                offset: 1075838976
-                type: partition
-                id: partition-2
-              - name: rootvg
-                devices:
-                - partition-2
-                preserve: false
-                type: lvm_volgroup
-                id: lvm_volgroup-0
-              - name: swap
-                volgroup: lvm_volgroup-0
-                size: 2147483648B
-                wipe: superblock
-                preserve: false
-                type: lvm_partition
-                id: lvm_partition-0
-              - fstype: swap
-                volume: lvm_partition-0
-                preserve: false
-                type: format
-                id: format-1
-              - path: ''
-                device: format-1
-                type: mount
-                id: mount-1
-              - name: root
-                volgroup: lvm_volgroup-0
-                size: 17179869184B
-                wipe: superblock
-                preserve: false
-                type: lvm_partition
-                id: lvm_partition-1
-              - fstype: ext4
-                volume: lvm_partition-1
-                preserve: false
-                type: format
-                id: format-2
-              - path: /
-                device: format-2
-                type: mount
-                id: mount-2
-              - path: /boot
-                device: format-0
-                type: mount
-                id: mount-0
-              swap:
-                swap: 0
-            updates: security
-            timezone: America/New_York
-            shutdown: poweroff
-            version: 1
+
     - name: Install NFS server
       ansible.builtin.apt:
         name: nfs-kernel-server
@@ -354,3 +226,14 @@
     - name: Enable UFW
       community.general.ufw:
         state: enabled
+
+    - name: Install PHP
+      ansible.builtin.apt:
+        name: php8.1
+      register: install_php
+
+    - name: Restart Apache if PHP installed
+      ansible.builtin.service: # noqa no-handler
+        name: apache2
+        state: restarted
+      when: install_php.changed
