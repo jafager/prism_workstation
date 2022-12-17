@@ -50,9 +50,9 @@
           backend controlplane
             balance roundrobin
             mode tcp
-            server klabadmnode1 192.168.251.11:6443 check
-            server klabadmnode2 192.168.251.12:6443 check
-            server klabadmnode3 192.168.251.13:6443 check
+            server klabadmnode1 192.168.252.11:6443 check
+            server klabadmnode2 192.168.252.12:6443 check
+            server klabadmnode3 192.168.252.13:6443 check
       register: configure_haproxy
 
     - name: Restart haproxy if necessary
@@ -87,7 +87,7 @@
             interval 2
           }
           vrrp_instance controlplane {
-            interface ens4
+            interface ens3
             state {{ keepalived_state }}
             priority {{ keepalived_priority }}
             virtual_router_id 20
@@ -103,7 +103,7 @@
               haproxy_controlplane
             }
             virtual_ipaddress {
-              192.168.251.100/24 dev ens4 label ens4:1
+              192.168.252.100/24 dev ens3 label ens4:1
             }
           }
       register: configure_keepalived

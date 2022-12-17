@@ -254,7 +254,7 @@
           192.168.252.16 kadmlabnode6.kadmlab.prism.local kadmlabnode6
           192.168.252.11 kadmlablb1.kadmlab.prism.local kadmlablb1
           192.168.252.12 kadmlablb2.kadmlab.prism.local kadmlablb2
-          192.168.251.100 controlplane.kadmlab.prism.local controlplane
+          192.168.252.100 controlplane.kadmlab.prism.local controlplane
           192.168.249.11 deplabserver.deplab.prism.local deplabserver
 
     - name: Install OpenVPN
