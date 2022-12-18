@@ -330,3 +330,75 @@
         owner: root
         group: root
         mode: 0755
+
+    # - name: Add Helm repository key
+    #   ansible.builtin.get_url:
+    #     url: https://baltocdn.com/helm/signing.asc
+    #     dest: /etc/apt/trusted.gpg.d/helm_signing.asc
+    #     owner: root
+    #     group: root
+    #     mode: 0644
+
+    # - name: Install Helm repository prerequisites
+    #   ansible.builtin.apt:
+    #     pkg:
+    #       - apt-transport-https
+
+    # - name: Add Helm repository
+    #   ansible.builtin.apt_repository:
+    #     repo: 'deb https://baltocdn.com/helm/stable/debian/ all main'
+
+    # - name: Install Helm
+    #   ansible.builtin.apt:
+    #     name: helm
+    #     update_cache: true
+
+    # - name: Add MetalLB repository
+    #   kubernetes.core.helm_repository:
+    #     name: metallb
+    #     repo_url: https://metallb.github.io/metallb
+    #   when: initial_control_plane == inventory_hostname
+
+    # - name: Install MetalLB chart
+    #   kubernetes.core.helm:
+    #     name: metallb
+    #     chart_ref: metallb/metallb
+    #     release_namespace: metallb-system
+    #     create_namespace: true
+    #     kubeconfig: /etc/kubernetes/admin.conf
+    #   when: initial_control_plane == inventory_hostname
+
+    # - name: Install Python PIP
+    #   ansible.builtin.apt:
+    #     name: python3-pip
+
+    # - name: Install Python Kubernetes module
+    #   ansible.builtin.pip:
+    #     name: kubernetes
+
+    # - name: Configure MetalLB IP address pool
+    #   kubernetes.core.k8s:
+    #     state: present
+    #     definition:
+    #       apiVersion: metallb.io/v1beta1
+    #       kind: IPAddressPool
+    #       metadata:
+    #         name: kadmlab-ippool
+    #         namespace: metallb-system
+    #       spec:
+    #         addresses:
+    #           - '192.168.251.100-192.168.251.199'
+    #     kubeconfig: /etc/kubernetes/admin.conf
+    #   when: initial_control_plane == inventory_hostname
+
+    # - name: Configure MetalLB L2 advertisement
+    #   kubernetes.core.k8s:
+    #     state: present
+    #     definition:
+    #       apiVersion: metallb.io/v1beta1
+    #       kind: L2Advertisement
+    #       metadata:
+    #         name: kadmlab-advert
+    #         namespace: metallb-system
+    #     kubeconfig: /etc/kubernetes/admin.conf
+    #   when: initial_control_plane == inventory_hostname
