@@ -1,0 +1,42 @@
+---
+
+- name: Configure kadmlabnode servers
+  hosts: kadmlabnode
+  gather_facts: false
+  tasks:
+
+    - name: Wait for kadmlabnode servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Add Helm repository key
+      ansible.builtin.get_url:
+        url: https://baltocdn.com/helm/signing.asc
+        dest: /etc/apt/trusted.gpg.d/helm_signing.asc
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Install Helm repository prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+
+    - name: Add Helm repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://baltocdn.com/helm/stable/debian/ all main'
+
+    - name: Install Helm
+      ansible.builtin.apt:
+        name: helm
+        update_cache: true
+
+    - name: Add MetalLB repository
+      kubernetes.core.helm_repository:
+        name: metallb
+        repo_url: https://metallb.github.io/metallb
+      when: initial_control_plane == inventory_hostname

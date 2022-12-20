@@ -1,0 +1,63 @@
+---
+
+- name: Configure kadmlabnode servers
+  hosts: kadmlabnode
+  gather_facts: false
+  tasks:
+
+    - name: Wait for kadmlabnode servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Install MetalLB chart
+      kubernetes.core.helm:
+        name: metallb
+        chart_ref: metallb/metallb
+        release_namespace: metallb-system
+        create_namespace: true
+        kubeconfig: /etc/kubernetes/admin.conf
+        wait: true
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install Python PIP
+      ansible.builtin.apt:
+        name: python3-pip
+
+    - name: Install Python Kubernetes module
+      ansible.builtin.pip:
+        name: kubernetes
+
+    - name: Configure MetalLB IP address pool
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: kadmlab-ippool
+            namespace: metallb-system
+          spec:
+            addresses:
+              - '192.168.251.100-192.168.251.199'
+        kubeconfig: /etc/kubernetes/admin.conf
+      register: configure_metallb_ip_address_pool
+      until: configure_metallb_ip_address_pool is not failed
+      retries: 30
+      delay: 60
+      when: initial_control_plane == inventory_hostname
+
+    - name: Configure MetalLB L2 advertisement
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: kadmlab-advert
+            namespace: metallb-system
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname

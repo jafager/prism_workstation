@@ -1,0 +1,9 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: kadmlab-ippool
+  namespace: metallb-system
+spec:
+  addresses:
+    - '192.168.251.100-192.168.251.199'
+
