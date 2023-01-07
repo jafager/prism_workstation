@@ -1,0 +1,28 @@
+---
+
+- name: Configure host file entries
+  hosts: simplab
+  gather_facts: false
+  tasks:
+
+    - name: Wait for servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Manage host file entries
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.247.10 controlplane.simplab.prism.local
+          192.168.247.11 simplabcp1.simplab.prism.local
+          192.168.247.12 simplabcp2.simplab.prism.local
+          192.168.247.13 simplabcp3.simplab.prism.local
+          192.168.247.21 simplabwk1.simplab.prism.local
+          192.168.247.22 simplabwk2.simplab.prism.local
+          192.168.247.23 simplabwk3.simplab.prism.local
+          192.168.247.31 simplablb1.simplab.prism.local
+          192.168.247.41 simplabstor1.simplab.prism.local

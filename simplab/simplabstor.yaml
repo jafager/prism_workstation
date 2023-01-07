@@ -1,0 +1,55 @@
+---
+
+- name: Configure simplabstor servers
+  hosts: simplabstor
+  gather_facts: false
+  tasks:
+
+    - name: Wait for simplabstor servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Update packages
+      ansible.builtin.apt:
+        name: '*'
+        update_cache: true
+      register: update_packages
+
+    - name: Reboot if packages updated
+      ansible.builtin.reboot: # noqa no-handler
+      when: update_packages.changed
+
+    - name: Create NFS directory
+      ansible.builtin.file:
+        path: /mnt/nfs
+        owner: root
+        group: root
+        mode: 0755
+        state: directory
+
+    - name: Install NFS server
+      ansible.builtin.apt:
+        pkg:
+          - nfs-kernel-server
+
+    - name: Add NFS export
+      ansible.builtin.lineinfile:
+        dest: /etc/exports
+        regex: '^\s*/mnt/nfs\b.*$'
+        line: '/mnt/nfs 192.168.247.0/24(rw)'
+      register: add_nfs_export
+
+    - name: Start and enable NFS server
+      ansible.builtin.service:
+        name: nfs-server
+        state: started
+        enabled: true
+
+    - name: Reload exports if export file changed
+      ansible.builtin.command: # noqa no-handler
+        cmd: exportfs -r
+      when: add_nfs_export.changed
