@@ -1,0 +1,8 @@
+192.168.254.0/24    mklab
+192.168.253.0/24    rkelab
+192.168.252.0/24    kadmlab_management
+192.168.251.0/24    kadmlab_metallb
+192.168.249.0/24    deplab_external
+192.168.248.0/24    deplab_internal
+192.168.247.0/24    simplab_mgmt
+192.168.246.0/24    simplab_metallb
