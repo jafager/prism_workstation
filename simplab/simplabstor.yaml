@@ -40,7 +40,7 @@
       ansible.builtin.lineinfile:
         dest: /etc/exports
         regex: '^\s*/mnt/nfs\b.*$'
-        line: '/mnt/nfs 192.168.247.0/24(rw)'
+        line: '/mnt/nfs 192.168.247.0/24(rw,no_root_squash)'
       register: add_nfs_export
 
     - name: Start and enable NFS server

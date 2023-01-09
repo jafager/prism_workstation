@@ -137,6 +137,8 @@ all:
         certificate_key: c4babbd6051298815f1985c0997b5f6dc6114799cbe1d1a6b9c13692e369cd54
         metallb_range_start: 192.168.246.200
         metallb_range_end: 192.168.246.249
+        nfs_server_address: 192.168.247.41
+        nfs_server_path: /mnt/nfs
         ansible_user: jafager
         ansible_host_key_checking: false
   vars:

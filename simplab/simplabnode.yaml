@@ -304,3 +304,7 @@
     - name: Install Helm Diff plugin
       kubernetes.core.helm_plugin:
         plugin_path: https://github.com/databus23/helm-diff
+
+    - name: Install NFS client package
+      ansible.builtin.apt:
+        name: nfs-common

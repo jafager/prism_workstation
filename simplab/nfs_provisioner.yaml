@@ -1,0 +1,30 @@
+---
+
+- name: Configure NFS Subdirectory External Provisioner
+  hosts: simplabcp,simplabwk
+  gather_facts: false
+  tasks:
+
+    - name: Add NFS provisioner repository
+      kubernetes.core.helm_repository:
+        name: nfs-subdir-external-provisioner
+        repo_url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install NFS provisioner chart
+      kubernetes.core.helm:
+        name: nfs-subdir-external-provisioner
+        chart_ref: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+        release_namespace: nfs-provisioner
+        create_namespace: true
+        values:
+          nfs:
+            server: '{{ nfs_server_address }}'
+            path: '{{ nfs_server_path }}'
+          storageClass:
+            defaultClass: true
+            reclaimPolicy: Delete
+            onDelete: delete
+        kubeconfig: /etc/kubernetes/admin.conf
+        wait: true
+      when: initial_control_plane == inventory_hostname
