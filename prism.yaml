@@ -376,3 +376,19 @@
       ansible.builtin.apt:
         name: powershell
         update_cache: true
+
+    - name: Install MinIO kubectl plugin
+      ansible.builtin.get_url:
+        url: https://github.com/minio/operator/releases/download/v4.5.6/kubectl-minio_4.5.6_linux_amd64
+        dest: /usr/local/bin/kubectl-minio
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Install calicoctl
+      ansible.builtin.get_url:
+        url: https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
+        dest: /usr/local/bin/calicoctl
+        owner: root
+        group: root
+        mode: 0755
