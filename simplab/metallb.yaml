@@ -1,0 +1,57 @@
+---
+
+- name: Configure MetalLB
+  hosts: simplabcp,simplabwk
+  gather_facts: false
+  tasks:
+
+    - name: Wait for simplabcp and simplabwk servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Add MetalLB repository
+      kubernetes.core.helm_repository:
+        name: metallb
+        repo_url: https://metallb.github.io/metallb
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install MetalLB chart
+      kubernetes.core.helm:
+        name: metallb
+        chart_ref: metallb/metallb
+        release_namespace: metallb-system
+        create_namespace: true
+        kubeconfig: /etc/kubernetes/admin.conf
+        wait: true
+      when: initial_control_plane == inventory_hostname
+
+    - name: Configure MetalLB IP address pool
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: metallb-ippool
+            namespace: metallb-system
+          spec:
+            addresses:
+              - '{{ metallb_range_start }}-{{ metallb_range_end }}'
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
+
+    - name: Configure MetalLB L2 advertisement
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: metallb-advert
+            namespace: metallb-system
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
