@@ -1,0 +1,48 @@
+---
+
+- name: Configure Calico
+  hosts: simplabcp,simplabwk
+  gather_facts: false
+  tasks:
+
+    - name: Wait for simplabcp and simplabwk servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Add Calico repository
+      kubernetes.core.helm_repository:
+        name: projectcalico
+        repo_url: https://projectcalico.docs.tigera.io/charts
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install Calico chart
+      kubernetes.core.helm:
+        name: calico
+        chart_ref: projectcalico/tigera-operator
+        chart_version: v3.24.5
+        release_namespace: tigera-operator
+        create_namespace: true
+        values:
+          installation:
+            registry: quay.io/
+            calicoNetwork:
+              bgp: Disabled
+              ipPools:
+                - blockSize: 26
+                  cidr: 172.17.0.0/16
+                  encapsulation: VXLAN
+        kubeconfig: /etc/kubernetes/admin.conf
+        wait: true
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install calicoctl
+      ansible.builtin.get_url:
+        url: https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
+        dest: /usr/local/bin/calicoctl
+        owner: root
+        group: root
+        mode: 0755

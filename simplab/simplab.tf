@@ -70,7 +70,7 @@ resource "libvirt_volume" "ubuntu2204" {
     name = "ubuntu2204.qcow2"
     pool = "simplab"
     format = "qcow2"
-    source = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+    source = "/home/jafager/projects/prism_workstation/jammy-server-cloudimg-amd64.img"
     depends_on = [libvirt_pool.simplab]
 }
 
@@ -125,7 +125,7 @@ resource "libvirt_cloudinit_disk" "simplabwk" {
     count = var.wk_count
     name = "simplabwk${count.index + 1}.iso"
     user_data = templatefile("${path.module}/simplabwk_user_data.tftpl", { hostname = "simplabwk${count.index + 1}", fqdn = "simplabwk${count.index + 1}.simplab.prism.local", username = "jafager", password = "Ubuntu22.04", ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC9My5YdUN2wC+FC90bSCF6t3jrMGESv7+eafQETfD3t1bCwoPHpXywzeP6qVfgCxQQa7mmBT5sEOrJjtVw02QQA8C7vca+rprMOrN6rooCAZDlt8whoARv++MjgMnBset2QxuL5OoTOkLmVdw0rTubbxqf80CjZL/T7DVD04sS9CEQQOY7Qb9IzPtykATvKzalWLqT7GJNx+oMghGbAjx/AO4KyEwFgAEeT6vd72AtwsS7PKv46dL44IQSEg1T3Z6HVW0sF0/w9VMcujgwvBuveLGoRuH2kiniWiYSBOylbuTu1SMnKMHsJHm11aMqhnhZCB9fZPOdjYBuUZOMa0hiWq3WXq11Q+UMJurcQTFlB1bZf9ZBPwJzERiw4Z1eZwBC5JucAtajQYpsjRKskCKdixpkJ5l9oinKwfjYCnj+SjE+GeT7on3QA8iCtR4WCixdFVYszkfOX1SPd3mzRdohIjgAg3rWxOP/jkEXUm289F/uKAQUg5bIzIEJNAIfNWU= jafager@prism" })
-    network_config = templatefile("${path.module}/simplabwk_network_config.tftpl", { ip_addresses_1 = "[192.168.247.${20 + (count.index + 1)}/24]", gateway = "192.168.247.1", nameservers = "[8.8.8.8,8.8.4.4]", domains = "[simplab.prism.local]", ip_addresses_2 = "[192.168.246.${10 + (count.index + 1)}/24]" })
+    network_config = templatefile("${path.module}/simplabwk_network_config.tftpl", { ip_addresses_1 = "[192.168.247.${20 + (count.index + 1)}/24]", gateway = "192.168.247.1", nameservers = "[8.8.8.8,8.8.4.4]", domains = "[simplab.prism.local]", ip_addresses_2 = "[192.168.246.${20 + (count.index + 1)}/24]" })
 }
 
 resource "libvirt_cloudinit_disk" "simplablb" {

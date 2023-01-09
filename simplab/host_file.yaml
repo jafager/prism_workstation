@@ -17,7 +17,6 @@
       ansible.builtin.blockinfile:
         path: /etc/hosts
         block: |
-          192.168.247.10 controlplane.simplab.prism.local
           192.168.247.11 simplabcp1.simplab.prism.local
           192.168.247.12 simplabcp2.simplab.prism.local
           192.168.247.13 simplabcp3.simplab.prism.local
@@ -26,3 +25,4 @@
           192.168.247.23 simplabwk3.simplab.prism.local
           192.168.247.31 simplablb1.simplab.prism.local
           192.168.247.41 simplabstor1.simplab.prism.local
+          192.168.247.31 controlplane.simplab.prism.local

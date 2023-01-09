@@ -195,7 +195,7 @@
 
     - name: Delete kubeadm configuration file on initial control plane node
       ansible.builtin.file:
-        path: /tmp/kubeadm_init.yaml
+        path: /tmp/kubeadm_config.yaml
         state: absent
       when: initial_control_plane == inventory_hostname
 
@@ -206,215 +206,101 @@
         flat: true
       when: initial_control_plane == inventory_hostname
 
-    # - name: Generate CA certificate hash
-    #   community.crypto.x509_certificate_info:
-    #     path: /etc/kubernetes/pki/ca.crt
-    #   register: ca_certificate
-    #   delegate_to: '{{ initial_control_plane }}'
-    #   when: inventory_hostname != initial_control_plane
+    - name: Generate CA certificate hash
+      community.crypto.x509_certificate_info:
+        path: /etc/kubernetes/pki/ca.crt
+      register: ca_certificate
+      delegate_to: '{{ initial_control_plane }}'
+      when: inventory_hostname != initial_control_plane
 
-    # - name: Create kubeadm configuration file on other control plane nodes
-    #   ansible.builtin.copy:
-    #     dest: /tmp/kubeadm_config.yaml
-    #     owner: root
-    #     group: root
-    #     mode: 0644
-    #     content: |
-    #       apiVersion: kubeadm.k8s.io/v1beta3
-    #       kind: JoinConfiguration
-    #       discovery:
-    #         bootstrapToken:
-    #           apiServerEndpoint: "controlplane.simplab.prism.local:6443"
-    #           token: {{ cluster_token }}
-    #           caCertHashes:
-    #           - sha256:{{ ca_certificate.public_key_fingerprints.sha256 | replace(":", "") }}
-    #       nodeRegistration:
-    #         kubeletExtraArgs:
-    #           node-ip: "{{ cluster_address }}"
-    #       controlPlane:
-    #         localAPIEndpoint:
-    #           advertiseAddress: "{{ cluster_address }}"
-    #           bindPort: 6443
-    #         certificateKey: "{{ certificate_key }}"
-    #   when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
+    - name: Create kubeadm configuration file on other control plane nodes
+      ansible.builtin.copy:
+        dest: /tmp/kubeadm_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          apiVersion: kubeadm.k8s.io/v1beta3
+          kind: JoinConfiguration
+          discovery:
+            bootstrapToken:
+              apiServerEndpoint: "controlplane.simplab.prism.local:6443"
+              token: {{ cluster_token }}
+              caCertHashes:
+              - sha256:{{ ca_certificate.public_key_fingerprints.sha256 | replace(":", "") }}
+          controlPlane:
+            certificateKey: "{{ certificate_key }}"
+      when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
 
-    # - name: Run kubeadm join on other control plane nodes
-    #   ansible.builtin.command:
-    #     cmd: kubeadm join --config /tmp/kubeadm_config.yaml
-    #   when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
+    - name: Run kubeadm join on other control plane nodes
+      ansible.builtin.command:
+        cmd: kubeadm join --config /tmp/kubeadm_config.yaml
+      when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
 
-    # - name: Delete kubeadm configuration file on other control plane nodes
-    #   ansible.builtin.file:
-    #     path: /tmp/kubeadm_config.yaml
-    #     state: absent
-    #   when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
+    - name: Delete kubeadm configuration file on other control plane nodes
+      ansible.builtin.file:
+        path: /tmp/kubeadm_config.yaml
+        state: absent
+      when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
 
-    # - name: Create kubeadm configuration file on worker nodes
-    #   ansible.builtin.copy:
-    #     dest: /tmp/kubeadm_config.yaml
-    #     owner: root
-    #     group: root
-    #     mode: 0644
-    #     content: |
-    #       apiVersion: kubeadm.k8s.io/v1beta3
-    #       kind: JoinConfiguration
-    #       discovery:
-    #         bootstrapToken:
-    #           apiServerEndpoint: "controlplane.simplab.prism.local:6443"
-    #           token: {{ cluster_token }}
-    #           caCertHashes:
-    #           - sha256:{{ ca_certificate.public_key_fingerprints.sha256 | replace(":", "") }}
-    #       nodeRegistration:
-    #         kubeletExtraArgs:
-    #           node-ip: "{{ cluster_address }}"
-    #   when: kubernetes_role == 'worker'
+    - name: Create kubeadm configuration file on worker nodes
+      ansible.builtin.copy:
+        dest: /tmp/kubeadm_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          apiVersion: kubeadm.k8s.io/v1beta3
+          kind: JoinConfiguration
+          discovery:
+            bootstrapToken:
+              apiServerEndpoint: "controlplane.simplab.prism.local:6443"
+              token: {{ cluster_token }}
+              caCertHashes:
+              - sha256:{{ ca_certificate.public_key_fingerprints.sha256 | replace(":", "") }}
+      when: kubernetes_role == 'worker'
 
-    # - name: Run kubeadm join on worker nodes
-    #   ansible.builtin.command:
-    #     cmd: kubeadm join --config /tmp/kubeadm_config.yaml
-    #   when: kubernetes_role == 'worker'
+    - name: Run kubeadm join on worker nodes
+      ansible.builtin.command:
+        cmd: kubeadm join --config /tmp/kubeadm_config.yaml
+      when: kubernetes_role == 'worker'
 
-    # - name: Delete kubeadm configuration file on other control plane nodes
-    #   ansible.builtin.file:
-    #     path: /tmp/kubeadm_config.yaml
-    #     state: absent
-    #   when: kubernetes_role == 'worker'
+    - name: Delete kubeadm configuration file on other control plane nodes
+      ansible.builtin.file:
+        path: /tmp/kubeadm_config.yaml
+        state: absent
+      when: kubernetes_role == 'worker'
 
-    # - name: Download Calico operator manifest
-    #   ansible.builtin.get_url:
-    #     url: https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
-    #     dest: /tmp/tigera-operator.yaml
-    #     owner: root
-    #     group: root
-    #     mode: 0644
-    #   when: initial_control_plane == inventory_hostname
+    - name: Install Python PIP
+      ansible.builtin.apt:
+        name: python3-pip
 
-    # - name: Create Calico operator
-    #   ansible.builtin.command:
-    #     cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf create -f /tmp/tigera-operator.yaml
-    #   when: initial_control_plane == inventory_hostname
+    - name: Install Python Kubernetes module
+      ansible.builtin.pip:
+        name: kubernetes
 
-    # - name: Delete Calico operator manifest
-    #   ansible.builtin.file:
-    #     path: /tmp/tigera-operator.yaml
-    #     state: absent
-    #   when: initial_control_plane == inventory_hostname
+    - name: Add Helm repository key
+      ansible.builtin.get_url:
+        url: https://baltocdn.com/helm/signing.asc
+        dest: /etc/apt/trusted.gpg.d/helm_signing.asc
+        owner: root
+        group: root
+        mode: 0644
 
-    # - name: Copy Calico custom resources manifest
-    #   ansible.builtin.copy:
-    #     dest: /tmp/custom-resources.yaml
-    #     owner: root
-    #     group: root
-    #     mode: 0644
-    #     content: |
-    #       apiVersion: operator.tigera.io/v1
-    #       kind: Installation
-    #       metadata:
-    #         name: default
-    #       spec:
-    #         calicoNetwork:
-    #           bgp: Disabled
-    #           ipPools:
-    #           - blockSize: 26
-    #             cidr: 172.17.0.0/16
-    #             encapsulation: VXLAN
-    #           nodeAddressAutodetectionV4:
-    #             kubernetes: NodeInternalIP
-    #       ---
-    #       apiVersion: operator.tigera.io/v1
-    #       kind: APIServer
-    #       metadata:
-    #         name: default
-    #       spec: {}
-    #   when: initial_control_plane == inventory_hostname
+    - name: Install Helm repository prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
 
-    # - name: Create Calico custom resources
-    #   ansible.builtin.command:
-    #     cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf create -f /tmp/custom-resources.yaml
-    #   when: initial_control_plane == inventory_hostname
+    - name: Add Helm repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://baltocdn.com/helm/stable/debian/ all main'
 
-    # - name: Delete Calico custom resources manifest
-    #   ansible.builtin.file:
-    #     path: /tmp/custom-resources.yaml
-    #     state: absent
-    #   when: initial_control_plane == inventory_hostname
+    - name: Install Helm
+      ansible.builtin.apt:
+        name: helm
+        update_cache: true
 
-    # - name: Install calicoctl
-    #   ansible.builtin.get_url:
-    #     url: https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
-    #     dest: /usr/local/bin/calicoctl
-    #     owner: root
-    #     group: root
-    #     mode: 0755
-
-    # # - name: Add Helm repository key
-    # #   ansible.builtin.get_url:
-    # #     url: https://baltocdn.com/helm/signing.asc
-    # #     dest: /etc/apt/trusted.gpg.d/helm_signing.asc
-    # #     owner: root
-    # #     group: root
-    # #     mode: 0644
-
-    # # - name: Install Helm repository prerequisites
-    # #   ansible.builtin.apt:
-    # #     pkg:
-    # #       - apt-transport-https
-
-    # # - name: Add Helm repository
-    # #   ansible.builtin.apt_repository:
-    # #     repo: 'deb https://baltocdn.com/helm/stable/debian/ all main'
-
-    # # - name: Install Helm
-    # #   ansible.builtin.apt:
-    # #     name: helm
-    # #     update_cache: true
-
-    # # - name: Add MetalLB repository
-    # #   kubernetes.core.helm_repository:
-    # #     name: metallb
-    # #     repo_url: https://metallb.github.io/metallb
-    # #   when: initial_control_plane == inventory_hostname
-
-    # # - name: Install MetalLB chart
-    # #   kubernetes.core.helm:
-    # #     name: metallb
-    # #     chart_ref: metallb/metallb
-    # #     release_namespace: metallb-system
-    # #     create_namespace: true
-    # #     kubeconfig: /etc/kubernetes/admin.conf
-    # #   when: initial_control_plane == inventory_hostname
-
-    # # - name: Install Python PIP
-    # #   ansible.builtin.apt:
-    # #     name: python3-pip
-
-    # # - name: Install Python Kubernetes module
-    # #   ansible.builtin.pip:
-    # #     name: kubernetes
-
-    # # - name: Configure MetalLB IP address pool
-    # #   kubernetes.core.k8s:
-    # #     state: present
-    # #     definition:
-    # #       apiVersion: metallb.io/v1beta1
-    # #       kind: IPAddressPool
-    # #       metadata:
-    # #         name: simplab-ippool
-    # #         namespace: metallb-system
-    # #       spec:
-    # #         addresses:
-    # #           - '192.168.251.100-192.168.251.199'
-    # #     kubeconfig: /etc/kubernetes/admin.conf
-    # #   when: initial_control_plane == inventory_hostname
-
-    # # - name: Configure MetalLB L2 advertisement
-    # #   kubernetes.core.k8s:
-    # #     state: present
-    # #     definition:
-    # #       apiVersion: metallb.io/v1beta1
-    # #       kind: L2Advertisement
-    # #       metadata:
-    # #         name: simplab-advert
-    # #         namespace: metallb-system
-    # #     kubeconfig: /etc/kubernetes/admin.conf
-    # #   when: initial_control_plane == inventory_hostname
+    - name: Install Helm Diff plugin
+      kubernetes.core.helm_plugin:
+        plugin_path: https://github.com/databus23/helm-diff

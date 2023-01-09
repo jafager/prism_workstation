@@ -111,6 +111,8 @@ all:
               ansible_host: 192.168.247.12
             simplabcp3:
               ansible_host: 192.168.247.13
+          vars:
+            kubernetes_role: control plane
         simplabwk:
           hosts:
             simplabwk1:
@@ -119,6 +121,8 @@ all:
               ansible_host: 192.168.247.22
             simplabwk3:
               ansible_host: 192.168.247.23
+          vars:
+            kubernetes_role: worker
         simplablb:
           hosts:
             simplablb1:
