@@ -265,6 +265,12 @@
           Host simplabstor1.simplab.prism.local simplabstor1
               HostName 192.168.247.41
               StrictHostKeyChecking no
+          Host puppet2.hosting.com puppet2 foreman2.nwk01.hosting.com foreman2
+              HostName puppet2.hosting.com
+              User jfager
+              IdentityFile ~/.ssh/ntirety
+              HostKeyAlgorithms +ssh-rsa,ssh-dss
+              PubkeyAcceptedKeyTypes +ssh-rsa
 
     - name: Add /etc/hosts entries
       ansible.builtin.blockinfile:
