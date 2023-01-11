@@ -126,3 +126,20 @@
         owner: root
         group: root
         mode: 0755
+
+    - name: Install prerequisites for AWS modules
+      ansible.builtin.apt:
+        pkg:
+          - python3-boto3
+          - python3-botocore
+
+    - name: Create MinIO buckets for Mimir
+      amazon.aws.s3_bucket:
+        name: '{{ item }}'
+        endpoint_url: 'http://localhost:9000'
+        aws_access_key: '{{ minio_root_user }}'
+        aws_secret_key: '{{ minio_root_password }}'
+      loop:
+        - blocks
+        - alertmanager
+        - ruler
