@@ -114,6 +114,15 @@ resource "libvirt_volume" "simplabstor" {
     depends_on = [libvirt_volume.ubuntu2204]
 }
 
+resource "libvirt_volume" "simplabstor_minio" {
+    count = var.stor_count
+    name = "simplabstor${count.index + 1}_minio.qcow2"
+    pool = "simplab"
+    format = "qcow2"
+    size = 32 * 1024 * 1024 * 1024
+    depends_on = [libvirt_pool.simplab]
+}
+
 resource "libvirt_cloudinit_disk" "simplabcp" {
     count = var.cp_count
     name = "simplabcp${count.index + 1}.iso"
@@ -201,9 +210,12 @@ resource "libvirt_domain" "simplabstor" {
     disk {
         volume_id = libvirt_volume.simplabstor[count.index].id
     }
+    disk {
+        volume_id = libvirt_volume.simplabstor_minio[count.index].id
+    }
     network_interface {
         network_id = libvirt_network.simplab_management.id
     }
     cloudinit = libvirt_cloudinit_disk.simplabstor[count.index].id
-    depends_on = [libvirt_volume.simplabstor, libvirt_network.simplab_management]
+    depends_on = [libvirt_volume.simplabstor, libvirt_volume.simplabstor_minio, libvirt_network.simplab_management]
 }

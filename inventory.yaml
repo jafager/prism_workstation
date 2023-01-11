@@ -139,6 +139,9 @@ all:
         metallb_range_end: 192.168.246.249
         nfs_server_address: 192.168.247.41
         nfs_server_path: /mnt/nfs
+        minio_root_user: minioroot
+        minio_root_password: UtdXfRF3bydCxgj7x4TREbmcNTNRKvi4
+        minio_path: /mnt/minio
         ansible_user: jafager
         ansible_host_key_checking: false
   vars:
