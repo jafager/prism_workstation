@@ -12,6 +12,7 @@ reset:
 	ansible-playbook calico.yaml
 	ansible-playbook metallb.yaml
 	ansible-playbook nfs_provisioner.yaml
+	ansible-playbook mimir.yaml
 
 nodes:
 	ansible simplabcp,simplabwk -m shell -a "kubeadm reset -f"

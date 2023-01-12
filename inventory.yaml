@@ -142,6 +142,10 @@ all:
         minio_root_user: minioroot
         minio_root_password: UtdXfRF3bydCxgj7x4TREbmcNTNRKvi4
         minio_path: /mnt/minio
+        s3_endpoint: '192.168.247.41:9000'
+        s3_blocks_bucket: blocks
+        s3_alertmanager_bucket: alertmanager
+        s3_ruler_bucket: ruler
         ansible_user: jafager
         ansible_host_key_checking: false
   vars:

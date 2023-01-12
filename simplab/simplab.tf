@@ -173,7 +173,7 @@ resource "libvirt_domain" "simplabwk" {
     count = var.wk_count
     name = "simplabwk${count.index + 1}"
     vcpu = "2"
-    memory = "4096"
+    memory = "8192"
     disk {
         volume_id = libvirt_volume.simplabwk[count.index].id
     }

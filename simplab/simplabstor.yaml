@@ -140,6 +140,6 @@
         aws_access_key: '{{ minio_root_user }}'
         aws_secret_key: '{{ minio_root_password }}'
       loop:
-        - blocks
-        - alertmanager
-        - ruler
+        - '{{ s3_blocks_bucket }}'
+        - '{{ s3_alertmanager_bucket }}'
+        - '{{ s3_ruler_bucket }}'
