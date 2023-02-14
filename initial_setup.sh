@@ -3,7 +3,7 @@
 
 # Upgrade packages
 sudo apt update
-sudo apt -y Upgrade
+sudo apt -y upgrade
 
 # Install Ansible
 sudo apt -y install software-properties-common
