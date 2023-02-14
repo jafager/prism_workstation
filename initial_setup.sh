@@ -24,4 +24,4 @@ sudo snap install chromium
 sudo snap install --classic Code
 
 # Install ansible-lint (for Visual Studio Code)
-sudo apt -y install ansible-lint
+sudo apt -y install
