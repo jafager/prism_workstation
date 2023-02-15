@@ -11,73 +11,30 @@
         update_cache: true
         autoremove: true
 
-    - name: Install desktop environment
-      ansible.builtin.apt:
-        name: ubuntu-desktop-minimal
-
-    - name: Install Chromium
-      community.general.snap:
-        name: chromium
-
-    - name: Install Ansible prerequisites
-      ansible.builtin.apt:
-        pkg:
-          - software-properties-common
-
-    - name: Install Ansible repository
-      ansible.builtin.apt_repository:
-        repo: ppa:ansible/ansible
-
-    - name: Install Ansible
-      ansible.builtin.apt:
-        name: ansible
-        update_cache: true
+    - name: Set time zone
+      community.general.timezone:
+        name: America/New_York
+        hwclock: local
 
     - name: Create Ansible config file
       ansible.builtin.copy:
         dest: /home/jafager/.ansible.cfg
         owner: jafager
-        group: root
-        mode: 0644
+        group: jafager
+        mode: 0600
         content: |
           [defaults]
           inventory = /home/jafager/projects/prism_workstation/inventory.yaml
           deprecation_warnings = false
           forks = 6
 
-    - name: Set time zone
-      community.general.timezone:
-        name: America/New_York
-
-    - name: Install KVM prerequisites
-      ansible.builtin.apt:
-        pkg:
-          - qemu-kvm
-          - libvirt-daemon-system
-          - virtinst
-          - libvirt-clients
-          - bridge-utils
-
-    - name: Start and enable libvirtd service
-      ansible.builtin.service:
-        name: libvirtd
-        state: started
-        enabled: true
-
-    - name: Add user to libvirt group
-      ansible.builtin.user:
-        name: jafager
-        groups: libvirt
-        append: true
-
-    - name: Install virtual machine manager
-      ansible.builtin.apt:
-        name: virt-manager
-
-    - name: Create volume group
-      community.general.lvg:
-        vg: datavg
-        pvs: /dev/sdb
+    - name: Create sudoers file
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/jafager
+        owner: root
+        group: root
+        mode: 0644
+        content: 'jafager ALL = (ALL) NOPASSWD: ALL'
 
     - name: Create logical volume for libvirt
       community.general.lvol:
@@ -96,6 +53,43 @@
         src: /dev/datavg/libvirt
         fstype: ext4
         state: mounted
+
+    - name: Install KVM prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - qemu-kvm
+          - libvirt-daemon-system
+          - virtinst
+          - libvirt-clients
+          - bridge-utils
+
+    - name: Disable SELinux for QEMU
+      ansible.builtin.lineinfile:
+        path: /etc/libvirt/qemu.conf
+        line: security_driver = "none"
+      register: disable_selinux_qemu
+
+    - name: Start and enable libvirtd service
+      ansible.builtin.service:
+        name: libvirtd
+        state: started
+        enabled: true
+
+    - name: Restart libvirt service # noqa no-handler
+      ansible.builtin.service:
+        name: libvirtd
+        state: restarted
+      when: disable_selinux_qemu.changed
+
+    - name: Add user to libvirt group
+      ansible.builtin.user:
+        name: jafager
+        groups: libvirt
+        append: true
+
+    - name: Install virtual machine manager
+      ansible.builtin.apt:
+        name: virt-manager
 
     - name: Install Terraform prerequisites
       ansible.builtin.apt:
@@ -122,19 +116,6 @@
         name: terraform
         update_cache: true
 
-    - name: Disable SELinux for QEMU
-      ansible.builtin.lineinfile:
-        path: /etc/libvirt/qemu.conf
-        line: security_driver = "none"
-        backup: true
-      register: disable_selinux_qemu
-
-    - name: Restart libvirt service # noqa no-handler
-      ansible.builtin.service:
-        name: libvirtd
-        state: restarted
-      when: disable_selinux_qemu.changed
-
     - name: Install genisoimage for mkisofs command (for Terraform cloud-init templates)
       ansible.builtin.apt:
         name: genisoimage
@@ -144,257 +125,245 @@
         pkg:
           - make
           - nmap
+          - fping
           - pwgen
-
-    - name: Create sudoers file
-      ansible.builtin.copy:
-        dest: /etc/sudoers.d/jafager
-        owner: root
-        group: root
-        mode: 0644
-        content: 'jafager ALL = (ALL) NOPASSWD: ALL'
 
     - name: Manage .bashrc
       ansible.builtin.blockinfile:
         path: /home/jafager/.bashrc
         block: |
-          function viprism {
-            vi /home/jafager/projects/prism_workstation/prism.yaml
-          }
-          function prism {
-            ansible-playbook -i /home/jafager/projects/prism_workstation/inventory.yaml /home/jafager/projects/prism_workstation/prism.yaml
-          }
-          export KUBECONFIG=/home/jafager/projects/prism_workstation/kadmlab/kubeconfig
+          umask 0077
+          export EDITOR="vim"
+          export VISUAL="${EDITOR}"
 
-    - name: Install Visual Studio Code
-      community.general.snap:
-        name: code
-        classic: true
+    # - name: Manage .bashrc
+    #   ansible.builtin.blockinfile:
+    #     path: /home/jafager/.bashrc
+    #     block: |
+    #       function viprism {
+    #         vi /home/jafager/projects/prism_workstation/prism.yaml
+    #       }
+    #       function prism {
+    #         ansible-playbook -i /home/jafager/projects/prism_workstation/inventory.yaml /home/jafager/projects/prism_workstation/prism.yaml
+    #       }
+    #       export KUBECONFIG=/home/jafager/projects/prism_workstation/kadmlab/kubeconfig
 
-    - name: Install ansible-lint (used by vscode)
-      ansible.builtin.apt:
-        name: ansible-lint
+    # - name: Install Kubernetes (?) prerequisites
+    #   ansible.builtin.apt:
+    #     name: '{{ item }}'
+    #   loop:
+    #     - ca-certificates
+    #     - curl
 
-    - name: Install Nvidia proprietary drivers
-      ansible.builtin.apt:
-        name: nvidia-driver-520
+    # - name: Add Kubernetes repository key
+    #   ansible.builtin.apt_key:
+    #     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
 
-    - name: Install Terraform prerequisites
-      ansible.builtin.apt:
-        name: '{{ item }}'
-      loop:
-        - ca-certificates
-        - curl
+    # - name: Add Kubernetes repository
+    #   ansible.builtin.apt_repository:
+    #     repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
 
-    - name: Add Kubernetes repository key
-      ansible.builtin.apt_key:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    # - name: Install kubectl
+    #   ansible.builtin.apt:
+    #     name: kubectl
+    #     update_cache: true
 
-    - name: Add Kubernetes repository
-      ansible.builtin.apt_repository:
-        repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
+    # - name: Download RKE binary
+    #   ansible.builtin.get_url:
+    #     url: https://github.com/rancher/rke/releases/download/v1.4.1/rke_linux-amd64
+    #     dest: /usr/local/bin/rke
+    #     owner: root
+    #     group: root
+    #     mode: 0755
 
-    - name: Install kubectl
-      ansible.builtin.apt:
-        name: kubectl
-        update_cache: true
+    # - name: Create SSH client config
+    #   ansible.builtin.copy:
+    #     dest: /home/jafager/.ssh/config
+    #     owner: jafager
+    #     group: jafager
+    #     mode: 0644
+    #     content: |
+    #       Host kadmlabnode1.kadmlab.prism.local kadmlabnode1
+    #           HostName 192.168.252.11
+    #           StrictHostKeyChecking no
+    #       Host kadmlabnode2.kadmlab.prism.local kadmlabnode2
+    #           HostName 192.168.252.12
+    #           StrictHostKeyChecking no
+    #       Host kadmlabnode3.kadmlab.prism.local kadmlabnode3
+    #           HostName 192.168.252.13
+    #           StrictHostKeyChecking no
+    #       Host kadmlabnode4.kadmlab.prism.local kadmlabnode4
+    #           HostName 192.168.252.14
+    #           StrictHostKeyChecking no
+    #       Host kadmlabnode5.kadmlab.prism.local kadmlabnode5
+    #           HostName 192.168.252.15
+    #           StrictHostKeyChecking no
+    #       Host kadmlabnode6.kadmlab.prism.local kadmlabnode6
+    #           HostName 192.168.252.16
+    #           StrictHostKeyChecking no
+    #       Host kadmlablb1.kadmlab.prism.local kadmlablb1
+    #           HostName 192.168.252.21
+    #           StrictHostKeyChecking no
+    #       Host kadmlablb2.kadmlab.prism.local kadmlablb2
+    #           HostName 192.168.252.22
+    #           StrictHostKeyChecking no
+    #       Host deplabserver.deplab.prism.local deplabserver
+    #           HostName 192.168.249.11
+    #           StrictHostKeyChecking no
+    #       Host simplabcp1.simplab.prism.local simplabcp1
+    #           HostName 192.168.247.11
+    #           StrictHostKeyChecking no
+    #       Host simplabcp2.simplab.prism.local simplabcp2
+    #           HostName 192.168.247.12
+    #           StrictHostKeyChecking no
+    #       Host simplabcp3.simplab.prism.local simplabcp3
+    #           HostName 192.168.247.13
+    #           StrictHostKeyChecking no
+    #       Host simplabwk1.simplab.prism.local simplabwk1
+    #           HostName 192.168.247.21
+    #           StrictHostKeyChecking no
+    #       Host simplabwk2.simplab.prism.local simplabwk2
+    #           HostName 192.168.247.22
+    #           StrictHostKeyChecking no
+    #       Host simplabwk3.simplab.prism.local simplabwk3
+    #           HostName 192.168.247.23
+    #           StrictHostKeyChecking no
+    #       Host simplablb1.simplab.prism.local simplablb1
+    #           HostName 192.168.247.31
+    #           StrictHostKeyChecking no
+    #       Host simplabstor1.simplab.prism.local simplabstor1
+    #           HostName 192.168.247.41
+    #           StrictHostKeyChecking no
+    #       Host puppet2.hosting.com puppet2 foreman2.nwk01.hosting.com foreman2
+    #           HostName puppet2.hosting.com
+    #           User jfager
+    #           IdentityFile ~/.ssh/ntirety
+    #           HostKeyAlgorithms +ssh-rsa,ssh-dss
+    #           PubkeyAcceptedKeyTypes +ssh-rsa
 
-    - name: Download RKE binary
-      ansible.builtin.get_url:
-        url: https://github.com/rancher/rke/releases/download/v1.4.1/rke_linux-amd64
-        dest: /usr/local/bin/rke
-        owner: root
-        group: root
-        mode: 0755
+    # - name: Add /etc/hosts entries
+    #   ansible.builtin.blockinfile:
+    #     path: /etc/hosts
+    #     block: |
+    #       192.168.252.11 kadmlabnode1.kadmlab.prism.local kadmlabnode1
+    #       192.168.252.12 kadmlabnode2.kadmlab.prism.local kadmlabnode2
+    #       192.168.252.13 kadmlabnode3.kadmlab.prism.local kadmlabnode3
+    #       192.168.252.14 kadmlabnode4.kadmlab.prism.local kadmlabnode4
+    #       192.168.252.15 kadmlabnode5.kadmlab.prism.local kadmlabnode5
+    #       192.168.252.16 kadmlabnode6.kadmlab.prism.local kadmlabnode6
+    #       192.168.252.11 kadmlablb1.kadmlab.prism.local kadmlablb1
+    #       192.168.252.12 kadmlablb2.kadmlab.prism.local kadmlablb2
+    #       192.168.252.100 controlplane.kadmlab.prism.local
+    #       192.168.249.11 deplabserver.deplab.prism.local deplabserver
+    #       192.168.247.11 simplabcp1.simplab.prism.local simplabcp1
+    #       192.168.247.12 simplabcp2.simplab.prism.local simplabcp2
+    #       192.168.247.13 simplabcp3.simplab.prism.local simplabcp3
+    #       192.168.247.21 simplabwk1.simplab.prism.local simplabwk1
+    #       192.168.247.22 simplabwk2.simplab.prism.local simplabwk2
+    #       192.168.247.23 simplabwk3.simplab.prism.local simplabwk3
+    #       192.168.247.31 simplablb1.simplab.prism.local simplablb1
+    #       192.168.247.41 simplabstor1.simplab.prism.local simplabstor1
+    #       192.168.247.31 controlplane.simplab.prism.local
 
-    - name: Create SSH client config
-      ansible.builtin.copy:
-        dest: /home/jafager/.ssh/config
-        owner: jafager
-        group: jafager
-        mode: 0644
-        content: |
-          Host kadmlabnode1.kadmlab.prism.local kadmlabnode1
-              HostName 192.168.252.11
-              StrictHostKeyChecking no
-          Host kadmlabnode2.kadmlab.prism.local kadmlabnode2
-              HostName 192.168.252.12
-              StrictHostKeyChecking no
-          Host kadmlabnode3.kadmlab.prism.local kadmlabnode3
-              HostName 192.168.252.13
-              StrictHostKeyChecking no
-          Host kadmlabnode4.kadmlab.prism.local kadmlabnode4
-              HostName 192.168.252.14
-              StrictHostKeyChecking no
-          Host kadmlabnode5.kadmlab.prism.local kadmlabnode5
-              HostName 192.168.252.15
-              StrictHostKeyChecking no
-          Host kadmlabnode6.kadmlab.prism.local kadmlabnode6
-              HostName 192.168.252.16
-              StrictHostKeyChecking no
-          Host kadmlablb1.kadmlab.prism.local kadmlablb1
-              HostName 192.168.252.21
-              StrictHostKeyChecking no
-          Host kadmlablb2.kadmlab.prism.local kadmlablb2
-              HostName 192.168.252.22
-              StrictHostKeyChecking no
-          Host deplabserver.deplab.prism.local deplabserver
-              HostName 192.168.249.11
-              StrictHostKeyChecking no
-          Host simplabcp1.simplab.prism.local simplabcp1
-              HostName 192.168.247.11
-              StrictHostKeyChecking no
-          Host simplabcp2.simplab.prism.local simplabcp2
-              HostName 192.168.247.12
-              StrictHostKeyChecking no
-          Host simplabcp3.simplab.prism.local simplabcp3
-              HostName 192.168.247.13
-              StrictHostKeyChecking no
-          Host simplabwk1.simplab.prism.local simplabwk1
-              HostName 192.168.247.21
-              StrictHostKeyChecking no
-          Host simplabwk2.simplab.prism.local simplabwk2
-              HostName 192.168.247.22
-              StrictHostKeyChecking no
-          Host simplabwk3.simplab.prism.local simplabwk3
-              HostName 192.168.247.23
-              StrictHostKeyChecking no
-          Host simplablb1.simplab.prism.local simplablb1
-              HostName 192.168.247.31
-              StrictHostKeyChecking no
-          Host simplabstor1.simplab.prism.local simplabstor1
-              HostName 192.168.247.41
-              StrictHostKeyChecking no
-          Host puppet2.hosting.com puppet2 foreman2.nwk01.hosting.com foreman2
-              HostName puppet2.hosting.com
-              User jfager
-              IdentityFile ~/.ssh/ntirety
-              HostKeyAlgorithms +ssh-rsa,ssh-dss
-              PubkeyAcceptedKeyTypes +ssh-rsa
+    # - name: Install OpenVPN
+    #   ansible.builtin.apt:
+    #     name: openvpn
 
-    - name: Add /etc/hosts entries
-      ansible.builtin.blockinfile:
-        path: /etc/hosts
-        block: |
-          192.168.252.11 kadmlabnode1.kadmlab.prism.local kadmlabnode1
-          192.168.252.12 kadmlabnode2.kadmlab.prism.local kadmlabnode2
-          192.168.252.13 kadmlabnode3.kadmlab.prism.local kadmlabnode3
-          192.168.252.14 kadmlabnode4.kadmlab.prism.local kadmlabnode4
-          192.168.252.15 kadmlabnode5.kadmlab.prism.local kadmlabnode5
-          192.168.252.16 kadmlabnode6.kadmlab.prism.local kadmlabnode6
-          192.168.252.11 kadmlablb1.kadmlab.prism.local kadmlablb1
-          192.168.252.12 kadmlablb2.kadmlab.prism.local kadmlablb2
-          192.168.252.100 controlplane.kadmlab.prism.local
-          192.168.249.11 deplabserver.deplab.prism.local deplabserver
-          192.168.247.11 simplabcp1.simplab.prism.local simplabcp1
-          192.168.247.12 simplabcp2.simplab.prism.local simplabcp2
-          192.168.247.13 simplabcp3.simplab.prism.local simplabcp3
-          192.168.247.21 simplabwk1.simplab.prism.local simplabwk1
-          192.168.247.22 simplabwk2.simplab.prism.local simplabwk2
-          192.168.247.23 simplabwk3.simplab.prism.local simplabwk3
-          192.168.247.31 simplablb1.simplab.prism.local simplablb1
-          192.168.247.41 simplabstor1.simplab.prism.local simplabstor1
-          192.168.247.31 controlplane.simplab.prism.local
+    # - name: Disable OpenVPN (we don't want it to start automatically)
+    #   ansible.builtin.service:
+    #     name: '{{ item }}'
+    #     enabled: false
+    #   loop:
+    #     - openvpn
+    #     - openvpn@client
+    #     - openvpn@server
 
-    - name: Install OpenVPN
-      ansible.builtin.apt:
-        name: openvpn
+    # - name: Copy OpenVPN client configuration file
+    #   ansible.builtin.copy:
+    #     dest: /etc/openvpn/client.conf
+    #     owner: root
+    #     group: root
+    #     mode: 0644
+    #     content: |
+    #       remote vpn.tpa02.hosting.com 443 tcp-client
+    #       resolv-retry infinite
+    #       tls-client
+    #       auth-user-pass
+    #       auth-nocache
+    #       reneg-sec 0
+    #       static-challenge "Provide second factor:" 1
+    #       pull
+    #       dev tun
+    #       persist-tun
+    #       nobind
+    #       cipher AES-128-CBC
+    #       script-security 2
+    #       tls-cipher "DEFAULT:@SECLEVEL=0"
+    #       dhcp-option DNS 76.12.32.110
+    #       dhcp-option DNS 208.112.89.187
+    #       <ca>
+    #       -----BEGIN CERTIFICATE-----
+    #       MIIEgDCCA2igAwIBAgIJAMwBR9SBAqrGMA0GCSqGSIb3DQEBBQUAMIGFMRAwDgYD
+    #       VQQDDAdHVlBOIENBMQswCQYDVQQGEwJVUzEQMA4GA1UECAwHRmxvcmlkYTEOMAwG
+    #       A1UEBwwFVGFtcGExHDAaBgNVBAoME0hvc3R3YXkgQ29ycG9yYXRpb24xJDAiBgkq
+    #       hkiG9w0BCQEWFXJvb3RAZ3Zwbi5ob3N0d2F5Lm5ldDAeFw0xNTExMDcxNzU2MTJa
+    #       Fw0yNTExMDQxNzU2MTJaMIGFMRAwDgYDVQQDDAdHVlBOIENBMQswCQYDVQQGEwJV
+    #       UzEQMA4GA1UECAwHRmxvcmlkYTEOMAwGA1UEBwwFVGFtcGExHDAaBgNVBAoME0hv
+    #       c3R3YXkgQ29ycG9yYXRpb24xJDAiBgkqhkiG9w0BCQEWFXJvb3RAZ3Zwbi5ob3N0
+    #       d2F5Lm5ldDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALqqqFos2o7x
+    #       /+QVZF8kphkdyxFdsqbxfaj3RmfKMo/97gTmOkrPqufLfnZmDoOuEHGB1fti9Q6g
+    #       /YivJpAmSCRdf4ELAjWaoIWdlfwsokW7Kh1hzlBeQTsv3HKFVhdZ37mySkezrv+K
+    #       IycZ/XlJb4JiLf2aQ6UpAo3cgFPQgawaV8W73IM5ga1CO6oTMbRUG6DjqvR9uoxk
+    #       sRQtsjxUlcCB8WUQVB2eVBr7RzZVkYzTYO7lmHs8mZ13u7dPr+uK8ZBJlJ/ehwsn
+    #       Qf9NXsUcs/l9K/2rRcDA0j0Pl6JO+PPswmjiPn80U1F7nGMD242kA+Ns86p1KQg0
+    #       TXk5viqrQgcCAwEAAaOB8DCB7TAdBgNVHQ4EFgQUTeucSCEdo22czigzMIqN3zJm
+    #       4P0wgboGA1UdIwSBsjCBr4AUTeucSCEdo22czigzMIqN3zJm4P2hgYukgYgwgYUx
+    #       EDAOBgNVBAMMB0dWUE4gQ0ExCzAJBgNVBAYTAlVTMRAwDgYDVQQIDAdGbG9yaWRh
+    #       MQ4wDAYDVQQHDAVUYW1wYTEcMBoGA1UECgwTSG9zdHdheSBDb3Jwb3JhdGlvbjEk
+    #       MCIGCSqGSIb3DQEJARYVcm9vdEBndnBuLmhvc3R3YXkubmV0ggkAzAFH1IECqsYw
+    #       DwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQUFAAOCAQEABhP6Z5iGCiv3kE5v
+    #       os/DRTGabsD72cF593yBm+wj96xcLXltikplibhnoOoOsHaeRIwpA+dICFTU2a8B
+    #       0CfCFjSKz4HCXnuzMV47zK+hbo7LijDkwowM4YL3qFxcxxnq6hdI4zvH9/jsC8K7
+    #       2oA3awrt3LwRFKKZ2s3A5aWUzXVTxFhMbK/7hXeAPRZ/BYUZJJa7fvf/pVUal4sg
+    #       Pg7T23nZQ+ZugIxoODTRGFvq+ODZT/FACQbe10Ubh4j1jyhSkLJ2VLzmmvzjqSCn
+    #       4D7tO9PKrviCzzxZZfFVe2IIBUjDELLSQUkdOrmNJppQv2EaIQM1VhEr+Wx+V0X+
+    #       O4kOOA==
+    #       -----END CERTIFICATE-----
+    #       </ca>
 
-    - name: Disable OpenVPN (we don't want it to start automatically)
-      ansible.builtin.service:
-        name: '{{ item }}'
-        enabled: false
-      loop:
-        - openvpn
-        - openvpn@client
-        - openvpn@server
+    # - name: Install Remmina RDP client
+    #   ansible.builtin.apt:
+    #     pkg:
+    #       - remmina
+    #       - remmina-plugin-rdp
 
-    - name: Copy OpenVPN client configuration file
-      ansible.builtin.copy:
-        dest: /etc/openvpn/client.conf
-        owner: root
-        group: root
-        mode: 0644
-        content: |
-          remote vpn.tpa02.hosting.com 443 tcp-client
-          resolv-retry infinite
-          tls-client
-          auth-user-pass
-          auth-nocache
-          reneg-sec 0
-          static-challenge "Provide second factor:" 1
-          pull
-          dev tun
-          persist-tun
-          nobind
-          cipher AES-128-CBC
-          script-security 2
-          tls-cipher "DEFAULT:@SECLEVEL=0"
-          dhcp-option DNS 76.12.32.110
-          dhcp-option DNS 208.112.89.187
-          <ca>
-          -----BEGIN CERTIFICATE-----
-          MIIEgDCCA2igAwIBAgIJAMwBR9SBAqrGMA0GCSqGSIb3DQEBBQUAMIGFMRAwDgYD
-          VQQDDAdHVlBOIENBMQswCQYDVQQGEwJVUzEQMA4GA1UECAwHRmxvcmlkYTEOMAwG
-          A1UEBwwFVGFtcGExHDAaBgNVBAoME0hvc3R3YXkgQ29ycG9yYXRpb24xJDAiBgkq
-          hkiG9w0BCQEWFXJvb3RAZ3Zwbi5ob3N0d2F5Lm5ldDAeFw0xNTExMDcxNzU2MTJa
-          Fw0yNTExMDQxNzU2MTJaMIGFMRAwDgYDVQQDDAdHVlBOIENBMQswCQYDVQQGEwJV
-          UzEQMA4GA1UECAwHRmxvcmlkYTEOMAwGA1UEBwwFVGFtcGExHDAaBgNVBAoME0hv
-          c3R3YXkgQ29ycG9yYXRpb24xJDAiBgkqhkiG9w0BCQEWFXJvb3RAZ3Zwbi5ob3N0
-          d2F5Lm5ldDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALqqqFos2o7x
-          /+QVZF8kphkdyxFdsqbxfaj3RmfKMo/97gTmOkrPqufLfnZmDoOuEHGB1fti9Q6g
-          /YivJpAmSCRdf4ELAjWaoIWdlfwsokW7Kh1hzlBeQTsv3HKFVhdZ37mySkezrv+K
-          IycZ/XlJb4JiLf2aQ6UpAo3cgFPQgawaV8W73IM5ga1CO6oTMbRUG6DjqvR9uoxk
-          sRQtsjxUlcCB8WUQVB2eVBr7RzZVkYzTYO7lmHs8mZ13u7dPr+uK8ZBJlJ/ehwsn
-          Qf9NXsUcs/l9K/2rRcDA0j0Pl6JO+PPswmjiPn80U1F7nGMD242kA+Ns86p1KQg0
-          TXk5viqrQgcCAwEAAaOB8DCB7TAdBgNVHQ4EFgQUTeucSCEdo22czigzMIqN3zJm
-          4P0wgboGA1UdIwSBsjCBr4AUTeucSCEdo22czigzMIqN3zJm4P2hgYukgYgwgYUx
-          EDAOBgNVBAMMB0dWUE4gQ0ExCzAJBgNVBAYTAlVTMRAwDgYDVQQIDAdGbG9yaWRh
-          MQ4wDAYDVQQHDAVUYW1wYTEcMBoGA1UECgwTSG9zdHdheSBDb3Jwb3JhdGlvbjEk
-          MCIGCSqGSIb3DQEJARYVcm9vdEBndnBuLmhvc3R3YXkubmV0ggkAzAFH1IECqsYw
-          DwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQUFAAOCAQEABhP6Z5iGCiv3kE5v
-          os/DRTGabsD72cF593yBm+wj96xcLXltikplibhnoOoOsHaeRIwpA+dICFTU2a8B
-          0CfCFjSKz4HCXnuzMV47zK+hbo7LijDkwowM4YL3qFxcxxnq6hdI4zvH9/jsC8K7
-          2oA3awrt3LwRFKKZ2s3A5aWUzXVTxFhMbK/7hXeAPRZ/BYUZJJa7fvf/pVUal4sg
-          Pg7T23nZQ+ZugIxoODTRGFvq+ODZT/FACQbe10Ubh4j1jyhSkLJ2VLzmmvzjqSCn
-          4D7tO9PKrviCzzxZZfFVe2IIBUjDELLSQUkdOrmNJppQv2EaIQM1VhEr+Wx+V0X+
-          O4kOOA==
-          -----END CERTIFICATE-----
-          </ca>
+    # - name: Install Microsoft repository prerequisites
+    #   ansible.builtin.apt:
+    #     pkg:
+    #       - apt-transport-https
+    #       - software-properties-common
 
-    - name: Install Remmina RDP client
-      ansible.builtin.apt:
-        pkg:
-          - remmina
-          - remmina-plugin-rdp
+    # - name: Install Microsoft repository package
+    #   ansible.builtin.apt:
+    #     deb: https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
 
-    - name: Install Microsoft repository prerequisites
-      ansible.builtin.apt:
-        pkg:
-          - apt-transport-https
-          - software-properties-common
+    # - name: Install PowerShell
+    #   ansible.builtin.apt:
+    #     name: powershell
+    #     update_cache: true
 
-    - name: Install Microsoft repository package
-      ansible.builtin.apt:
-        deb: https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+    # - name: Install MinIO kubectl plugin
+    #   ansible.builtin.get_url:
+    #     url: https://github.com/minio/operator/releases/download/v4.5.6/kubectl-minio_4.5.6_linux_amd64
+    #     dest: /usr/local/bin/kubectl-minio
+    #     owner: root
+    #     group: root
+    #     mode: 0755
 
-    - name: Install PowerShell
-      ansible.builtin.apt:
-        name: powershell
-        update_cache: true
-
-    - name: Install MinIO kubectl plugin
-      ansible.builtin.get_url:
-        url: https://github.com/minio/operator/releases/download/v4.5.6/kubectl-minio_4.5.6_linux_amd64
-        dest: /usr/local/bin/kubectl-minio
-        owner: root
-        group: root
-        mode: 0755
-
-    - name: Install calicoctl
-      ansible.builtin.get_url:
-        url: https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
-        dest: /usr/local/bin/calicoctl
-        owner: root
-        group: root
-        mode: 0755
+    # - name: Install calicoctl
+    #   ansible.builtin.get_url:
+    #     url: https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
+    #     dest: /usr/local/bin/calicoctl
+    #     owner: root
+    #     group: root
+    #     mode: 0755

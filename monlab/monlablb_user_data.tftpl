@@ -1,0 +1,16 @@
+#cloud-config
+hostname: ${hostname}
+fqdn: ${fqdn}
+manage_etc_hosts: true
+users:
+  - name: ${username}
+    sudo: 'ALL = (ALL) NOPASSWD: ALL'
+    ssh-authorized-keys:
+      - '${ssh_public_key}'
+    shell: /bin/bash
+ssh_pwauth: true
+disable_root: true
+chpasswd:
+  list: |
+    ${username}:${password}
+  expire: false

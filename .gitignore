@@ -4,6 +4,5 @@ mklab/mklab_rsa.pub
 terraform.tfstate*
 kube_config_cluster.yml
 cluster.rkestate
-ubuntu-22.04.1-live-server-amd64*
 *.img
 kubeconfig*

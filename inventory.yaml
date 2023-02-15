@@ -135,8 +135,6 @@ all:
         initial_control_plane: simplabcp1
         cluster_token: iw7a0f.amulf99lcxioh16j
         certificate_key: c4babbd6051298815f1985c0997b5f6dc6114799cbe1d1a6b9c13692e369cd54
-        metallb_range_start: 192.168.246.200
-        metallb_range_end: 192.168.246.249
         nfs_server_address: 192.168.247.41
         nfs_server_path: /mnt/nfs
         minio_root_user: minioroot
@@ -146,6 +144,51 @@ all:
         s3_blocks_bucket: blocks
         s3_alertmanager_bucket: alertmanager
         s3_ruler_bucket: ruler
+        ansible_user: jafager
+        ansible_host_key_checking: false
+    monlab:
+      children:
+        monlabcp:
+          hosts:
+            monlabcp1:
+              ansible_host: 192.168.245.11
+            monlabcp2:
+              ansible_host: 192.168.245.12
+            monlabcp3:
+              ansible_host: 192.168.245.13
+          vars:
+            kubernetes_role: control plane
+        monlabwk:
+          hosts:
+            monlabwk1:
+              ansible_host: 192.168.245.21
+            monlabwk2:
+              ansible_host: 192.168.245.22
+            monlabwk3:
+              ansible_host: 192.168.245.23
+          vars:
+            kubernetes_role: worker
+        monlablb:
+          hosts:
+            monlablb1:
+              ansible_host: 192.168.245.31
+        monlabstor:
+          hosts:
+            monlabstor1:
+              ansible_host: 192.168.245.41
+      vars:
+        initial_control_plane: monlabcp1
+        cluster_token: iw7a0f.amulf99lcxioh16j
+        certificate_key: c4babbd6051298815f1985c0997b5f6dc6114799cbe1d1a6b9c13692e369cd54
+        nfs_server_address: 192.168.245.41
+        nfs_server_path: /mnt/nfs
+        minio_root_user: minioroot
+        minio_root_password: UtdXfRF3bydCxgj7x4TREbmcNTNRKvi4
+        minio_path: /mnt/minio
+        s3_endpoint: '192.168.245.41:9000'
+        s3_blocks_bucket: mimir_blocks
+        s3_alertmanager_bucket: mimir_alertmanager
+        s3_ruler_bucket: mimir_ruler
         ansible_user: jafager
         ansible_host_key_checking: false
   vars:

@@ -6,3 +6,4 @@
 192.168.248.0/24    deplab_internal
 192.168.247.0/24    simplab_mgmt
 192.168.246.0/24    simplab_metallb
+192.168.245.0/24    monlab_mgmt
