@@ -1,0 +1,309 @@
+---
+
+- name: Configure monlabcp and monlabwk servers
+  hosts: monlabcp,monlabwk
+  gather_facts: false
+  tasks:
+
+    - name: Wait for monlabcp and monlabwk servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Update packages
+      ansible.builtin.apt:
+        name: '*'
+        update_cache: true
+      register: update_packages
+
+    - name: Reboot if packages updated
+      ansible.builtin.reboot: # noqa no-handler
+      when: update_packages.changed
+
+    - name: Disable firewall and reset to default settings
+      community.general.ufw:
+        state: reset
+
+    - name: Default deny incoming traffic
+      community.general.ufw:
+        direction: incoming
+        default: deny
+
+    - name: Default allow outgoing traffic
+      community.general.ufw:
+        direction: outgoing
+        default: allow
+
+    - name: Default deny forwarded traffic
+      community.general.ufw:
+        direction: routed
+        default: deny
+
+    - name: Allow all incoming traffic from the hypervisor
+      community.general.ufw:
+        direction: in
+        from_ip: 192.168.245.1
+        rule: allow
+
+    - name: Enable firewall
+      community.general.ufw:
+        state: enabled
+
+    - name: Add entries to hosts file
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.245.31 controlplane.monlab.prism.local
+
+    - name: Get swap devices
+      ansible.builtin.command:
+        cmd: cat /proc/swaps
+      register: get_swap_devices
+      changed_when: false
+
+    - name: Disable swap
+      ansible.builtin.command: # noqa no-changed-when
+        cmd: swapoff -a
+      # TODO - this runs all the time for some reason, write a working when clause
+
+    - name: Disable swap on boot
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+        replace: '#\1'
+
+    - name: Install CRI-O prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - curl
+          - gnupg
+
+    - name: Add CRI-O repository keys
+      ansible.builtin.get_url:
+        url: '{{ item.url }}'
+        dest: '/etc/apt/trusted.gpg.d/{{ item.keyring }}'
+        owner: root
+        group: root
+        mode: 0644
+      loop:
+        - url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/Release.key
+          keyring: libcontainers-archive-keyring.asc
+        - url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.26/xUbuntu_22.04/Release.key
+          keyring: libcontainers-crio-archive-keyring.asc
+
+    - name: Add CRI-O repositories
+      ansible.builtin.apt_repository:
+        repo: '{{ item }}'
+      loop:
+        - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /'
+        - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.26/xUbuntu_22.04/ /'
+
+    - name: Install CRI-O
+      ansible.builtin.apt:
+        pkg:
+          - cri-o
+          - cri-o-runc
+        update_cache: true
+
+    - name: Start and enable CRI-O
+      ansible.builtin.service:
+        name: crio
+        state: started
+        enabled: true
+
+    - name: Install Kubernetes prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+
+    - name: Install Kubernetes repository key
+      ansible.builtin.get_url:
+        url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'
+        dest: /etc/apt/trusted.gpg.d/kubernetes-apt-key.gpg
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Add Kubernetes repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
+
+    - name: Install kubelet, kubeadm, and kubectl
+      ansible.builtin.apt:
+        pkg:
+          - kubelet=1.26.0-00
+          - kubeadm=1.26.0-00
+          - kubectl=1.26.0-00
+        update_cache: true
+
+
+    - name: Load br_netfilter kernel module on boot
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/br_netfilter.conf
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          br_netfilter
+
+    - name: Load br_netfilter kernel module immediately
+      community.general.modprobe:
+        name: br_netfilter
+
+    - name: Enable IP forwarding
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+
+    - name: Enable bridge-nf-call-iptables
+      ansible.posix.sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: '1'
+
+    - name: Create kubeadm configuration file on initial control plane node
+      ansible.builtin.copy:
+        dest: /tmp/kubeadm_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          apiVersion: kubeadm.k8s.io/v1beta3
+          kind: InitConfiguration
+          bootstrapTokens:
+          - token: "{{ cluster_token }}"
+            ttl: "24h"
+          certificateKey: "{{ certificate_key }}"
+          ---
+          apiVersion: kubeadm.k8s.io/v1beta3
+          kind: ClusterConfiguration
+          networking:
+            serviceSubnet: "172.16.0.0/16"
+            podSubnet: "172.17.0.0/16"
+          controlPlaneEndpoint: "controlplane.monlab.prism.local:6443"
+      when: initial_control_plane == inventory_hostname
+
+    - name: Run kubeadm init on initial control plane node
+      ansible.builtin.command:
+        cmd: kubeadm init --upload-certs --config /tmp/kubeadm_config.yaml
+      when: initial_control_plane == inventory_hostname
+
+    - name: Delete kubeadm configuration file on initial control plane node
+      ansible.builtin.file:
+        path: /tmp/kubeadm_config.yaml
+        state: absent
+      when: initial_control_plane == inventory_hostname
+
+    - name: Download kubeconfig file
+      ansible.builtin.fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: kubeconfig
+        flat: true
+      when: initial_control_plane == inventory_hostname
+
+    - name: Generate CA certificate hash
+      community.crypto.x509_certificate_info:
+        path: /etc/kubernetes/pki/ca.crt
+      register: ca_certificate
+      delegate_to: '{{ initial_control_plane }}'
+      when: inventory_hostname != initial_control_plane
+
+    - name: Create kubeadm configuration file on other control plane nodes
+      ansible.builtin.copy:
+        dest: /tmp/kubeadm_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          apiVersion: kubeadm.k8s.io/v1beta3
+          kind: JoinConfiguration
+          discovery:
+            bootstrapToken:
+              apiServerEndpoint: "controlplane.monlab.prism.local:6443"
+              token: {{ cluster_token }}
+              caCertHashes:
+              - sha256:{{ ca_certificate.public_key_fingerprints.sha256 | replace(":", "") }}
+          controlPlane:
+            certificateKey: "{{ certificate_key }}"
+      when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
+
+    - name: Run kubeadm join on other control plane nodes
+      ansible.builtin.command:
+        cmd: kubeadm join --config /tmp/kubeadm_config.yaml
+      when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
+
+    - name: Delete kubeadm configuration file on other control plane nodes
+      ansible.builtin.file:
+        path: /tmp/kubeadm_config.yaml
+        state: absent
+      when: (kubernetes_role == 'control plane') and (inventory_hostname != initial_control_plane)
+
+    - name: Create kubeadm configuration file on worker nodes
+      ansible.builtin.copy:
+        dest: /tmp/kubeadm_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          apiVersion: kubeadm.k8s.io/v1beta3
+          kind: JoinConfiguration
+          discovery:
+            bootstrapToken:
+              apiServerEndpoint: "controlplane.monlab.prism.local:6443"
+              token: {{ cluster_token }}
+              caCertHashes:
+              - sha256:{{ ca_certificate.public_key_fingerprints.sha256 | replace(":", "") }}
+      when: kubernetes_role == 'worker'
+
+    - name: Run kubeadm join on worker nodes
+      ansible.builtin.command:
+        cmd: kubeadm join --config /tmp/kubeadm_config.yaml
+      when: kubernetes_role == 'worker'
+
+    - name: Delete kubeadm configuration file on other control plane nodes
+      ansible.builtin.file:
+        path: /tmp/kubeadm_config.yaml
+        state: absent
+      when: kubernetes_role == 'worker'
+
+    - name: Install Python PIP
+      ansible.builtin.apt:
+        name: python3-pip
+
+    - name: Install Python Kubernetes module
+      ansible.builtin.pip:
+        name: kubernetes
+
+    - name: Add Helm repository key
+      ansible.builtin.get_url:
+        url: https://baltocdn.com/helm/signing.asc
+        dest: /etc/apt/trusted.gpg.d/helm_signing.asc
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Install Helm repository prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+
+    - name: Add Helm repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://baltocdn.com/helm/stable/debian/ all main'
+
+    - name: Install Helm
+      ansible.builtin.apt:
+        name: helm
+        update_cache: true
+
+    - name: Install Helm Diff plugin
+      kubernetes.core.helm_plugin:
+        plugin_path: https://github.com/databus23/helm-diff
+
+    - name: Install NFS client package
+      ansible.builtin.apt:
+        name: nfs-common
