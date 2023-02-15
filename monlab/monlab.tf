@@ -116,6 +116,7 @@ resource "libvirt_cloudinit_disk" "monlabcp" {
     pool = "monlab"
     user_data = templatefile("${path.module}/monlabcp_user_data.tftpl", { hostname = "monlabcp${count.index + 1}", fqdn = "monlabcp${count.index + 1}.monlab.prism.local", username = "jafager", password = "Ubuntu22.04", ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCvwkuz9C+/yNORrC3zOr+XmefjnzB/Eue3NmiVGdYF66tCXyUuttvNLpzo7euBsgjP2fbY9HaV1bo1Vk9X7yqopN5LyKWfnbftK1o+cOKr8kWrro3SCLqmEWFuUgiU+vT8+slyRN1FH28JEOaxjdLGBSc9s/LxxagEq5pF6Sp6wvFPJ+Ur9IBXTIeAcVGJLC6eJW+H8OsstFTgG1xsoPMiDgIPK5UkpeXZZzebbNEFbOQDmncgOcG/y22YnG64tVCe9svzvetH49NtpFYIe45kNTZbXaa5P0kJXwjYwnHoIxE95yiWJec9Y3iawxy4mFn23HVh2dl3WFQziqhliaEAma0hZCnKCa/lNmu5RW94BCY31U1wdgMLa5tz9CdB9ymEq0EzxUdfQrbXST/pxYTsX/Gos6r75isNRj3DaiYdtVnTq3hJQxxyoJB9aZWGHwO/P+IKq3ZnfTyXo5uGUL1F6PoacSnd53r69hYCFIz8oZgzc8MtO5YEBR00uKN8g08= jafager@prism" })
     network_config = templatefile("${path.module}/monlabcp_network_config.tftpl", { ip_addresses_1 = "[192.168.245.${10 + (count.index + 1)}/24]", gateway = "192.168.245.1", nameservers = "[8.8.8.8,8.8.4.4]", domains = "[monlab.prism.local]" })
+    depends_on = [libvirt_pool.monlab]
 }
 
 resource "libvirt_cloudinit_disk" "monlabwk" {
@@ -124,6 +125,7 @@ resource "libvirt_cloudinit_disk" "monlabwk" {
     pool = "monlab"
     user_data = templatefile("${path.module}/monlabwk_user_data.tftpl", { hostname = "monlabwk${count.index + 1}", fqdn = "monlabwk${count.index + 1}.monlab.prism.local", username = "jafager", password = "Ubuntu22.04", ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCvwkuz9C+/yNORrC3zOr+XmefjnzB/Eue3NmiVGdYF66tCXyUuttvNLpzo7euBsgjP2fbY9HaV1bo1Vk9X7yqopN5LyKWfnbftK1o+cOKr8kWrro3SCLqmEWFuUgiU+vT8+slyRN1FH28JEOaxjdLGBSc9s/LxxagEq5pF6Sp6wvFPJ+Ur9IBXTIeAcVGJLC6eJW+H8OsstFTgG1xsoPMiDgIPK5UkpeXZZzebbNEFbOQDmncgOcG/y22YnG64tVCe9svzvetH49NtpFYIe45kNTZbXaa5P0kJXwjYwnHoIxE95yiWJec9Y3iawxy4mFn23HVh2dl3WFQziqhliaEAma0hZCnKCa/lNmu5RW94BCY31U1wdgMLa5tz9CdB9ymEq0EzxUdfQrbXST/pxYTsX/Gos6r75isNRj3DaiYdtVnTq3hJQxxyoJB9aZWGHwO/P+IKq3ZnfTyXo5uGUL1F6PoacSnd53r69hYCFIz8oZgzc8MtO5YEBR00uKN8g08= jafager@prism" })
     network_config = templatefile("${path.module}/monlabwk_network_config.tftpl", { ip_addresses_1 = "[192.168.245.${20 + (count.index + 1)}/24]", gateway = "192.168.245.1", nameservers = "[8.8.8.8,8.8.4.4]", domains = "[monlab.prism.local]" })
+    depends_on = [libvirt_pool.monlab]
 }
 
 resource "libvirt_cloudinit_disk" "monlablb" {
@@ -132,6 +134,7 @@ resource "libvirt_cloudinit_disk" "monlablb" {
     pool = "monlab"
     user_data = templatefile("${path.module}/monlablb_user_data.tftpl", { hostname = "monlablb${count.index + 1}", fqdn = "monlablb${count.index + 1}.monlab.prism.local", username = "jafager", password = "Ubuntu22.04", ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCvwkuz9C+/yNORrC3zOr+XmefjnzB/Eue3NmiVGdYF66tCXyUuttvNLpzo7euBsgjP2fbY9HaV1bo1Vk9X7yqopN5LyKWfnbftK1o+cOKr8kWrro3SCLqmEWFuUgiU+vT8+slyRN1FH28JEOaxjdLGBSc9s/LxxagEq5pF6Sp6wvFPJ+Ur9IBXTIeAcVGJLC6eJW+H8OsstFTgG1xsoPMiDgIPK5UkpeXZZzebbNEFbOQDmncgOcG/y22YnG64tVCe9svzvetH49NtpFYIe45kNTZbXaa5P0kJXwjYwnHoIxE95yiWJec9Y3iawxy4mFn23HVh2dl3WFQziqhliaEAma0hZCnKCa/lNmu5RW94BCY31U1wdgMLa5tz9CdB9ymEq0EzxUdfQrbXST/pxYTsX/Gos6r75isNRj3DaiYdtVnTq3hJQxxyoJB9aZWGHwO/P+IKq3ZnfTyXo5uGUL1F6PoacSnd53r69hYCFIz8oZgzc8MtO5YEBR00uKN8g08= jafager@prism" })
     network_config = templatefile("${path.module}/monlablb_network_config.tftpl", { ip_addresses_1 = "[192.168.245.${30 + (count.index + 1)}/24]", gateway = "192.168.245.1", nameservers = "[8.8.8.8,8.8.4.4]", domains = "[monlab.prism.local]" })
+    depends_on = [libvirt_pool.monlab]
 }
 
 resource "libvirt_cloudinit_disk" "monlabstor" {
@@ -140,6 +143,7 @@ resource "libvirt_cloudinit_disk" "monlabstor" {
     pool = "monlab"
     user_data = templatefile("${path.module}/monlabstor_user_data.tftpl", { hostname = "monlabstor${count.index + 1}", fqdn = "monlabstor${count.index + 1}.monlab.prism.local", username = "jafager", password = "Ubuntu22.04", ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCvwkuz9C+/yNORrC3zOr+XmefjnzB/Eue3NmiVGdYF66tCXyUuttvNLpzo7euBsgjP2fbY9HaV1bo1Vk9X7yqopN5LyKWfnbftK1o+cOKr8kWrro3SCLqmEWFuUgiU+vT8+slyRN1FH28JEOaxjdLGBSc9s/LxxagEq5pF6Sp6wvFPJ+Ur9IBXTIeAcVGJLC6eJW+H8OsstFTgG1xsoPMiDgIPK5UkpeXZZzebbNEFbOQDmncgOcG/y22YnG64tVCe9svzvetH49NtpFYIe45kNTZbXaa5P0kJXwjYwnHoIxE95yiWJec9Y3iawxy4mFn23HVh2dl3WFQziqhliaEAma0hZCnKCa/lNmu5RW94BCY31U1wdgMLa5tz9CdB9ymEq0EzxUdfQrbXST/pxYTsX/Gos6r75isNRj3DaiYdtVnTq3hJQxxyoJB9aZWGHwO/P+IKq3ZnfTyXo5uGUL1F6PoacSnd53r69hYCFIz8oZgzc8MtO5YEBR00uKN8g08= jafager@prism" })
     network_config = templatefile("${path.module}/monlabstor_network_config.tftpl", { ip_addresses_1 = "[192.168.245.${40 + (count.index + 1)}/24]", gateway = "192.168.245.1", nameservers = "[8.8.8.8,8.8.4.4]", domains = "[monlab.prism.local]" })
+    depends_on = [libvirt_pool.monlab]
 }
 
 resource "libvirt_domain" "monlabcp" {

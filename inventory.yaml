@@ -186,10 +186,14 @@ all:
         minio_root_password: UtdXfRF3bydCxgj7x4TREbmcNTNRKvi4
         minio_path: /mnt/minio
         s3_endpoint: '192.168.245.41:9000'
-        s3_blocks_bucket: mimir_blocks
-        s3_alertmanager_bucket: mimir_alertmanager
-        s3_ruler_bucket: mimir_ruler
+        s3_bucket_mimir_blocks: mimir-blocks
+        s3_bucket_mimir_alertmanager: mimir-alertmanager
+        s3_bucket_mimir_ruler: mimir-ruler
+        s3_bucket_loki_admin: loki-admin
+        s3_bucket_loki_chunks: loki-chunks
+        s3_bucket_loki_ruler: loki-ruler
         ansible_user: jafager
         ansible_host_key_checking: false
+        ansible_ssh_common_args: -o StrictHostKeyChecking=false
   vars:
     ansible_become: yes

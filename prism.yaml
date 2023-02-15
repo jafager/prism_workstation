@@ -127,6 +127,7 @@
           - nmap
           - fping
           - pwgen
+          - s4cmd
 
     - name: Manage .bashrc
       ansible.builtin.blockinfile:

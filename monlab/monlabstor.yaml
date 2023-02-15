@@ -1,0 +1,152 @@
+---
+
+- name: Configure monlabstor servers
+  hosts: monlabstor
+  gather_facts: false
+  tasks:
+
+    - name: Wait for monlabstor servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Update packages
+      ansible.builtin.apt:
+        name: '*'
+        update_cache: true
+      register: update_packages
+
+    - name: Reboot if packages updated
+      ansible.builtin.reboot: # noqa no-handler
+      when: update_packages.changed
+
+    - name: Create NFS directory
+      ansible.builtin.file:
+        path: /mnt/nfs
+        owner: root
+        group: root
+        mode: 0755
+        state: directory
+
+    - name: Install NFS server
+      ansible.builtin.apt:
+        pkg:
+          - nfs-kernel-server
+
+    - name: Add NFS export
+      ansible.builtin.lineinfile:
+        dest: /etc/exports
+        regex: '^\s*/mnt/nfs\b.*$'
+        line: '/mnt/nfs 192.168.245.0/24(rw,no_root_squash)'
+      register: add_nfs_export
+
+    - name: Start and enable NFS server
+      ansible.builtin.service:
+        name: nfs-server
+        state: started
+        enabled: true
+
+    - name: Reload exports if export file changed
+      ansible.builtin.command: # noqa no-handler
+        cmd: exportfs -r
+      when: add_nfs_export.changed
+
+    - name: Format MinIO drive
+      community.general.filesystem:
+        dev: /dev/vdb
+        fstype: xfs
+
+    - name: Create mount point for MinIO drive
+      ansible.builtin.file:
+        path: /mnt/minio
+        owner: root
+        group: root
+        mode: 0755
+        state: directory
+
+    - name: Mount MinIO drive
+      ansible.posix.mount:
+        path: /mnt/minio
+        src: /dev/vdb
+        fstype: xfs
+        state: mounted
+
+    - name: Create MinIO group
+      ansible.builtin.group:
+        name: minio-user
+
+    - name: Create MinIO user
+      ansible.builtin.user:
+        name: minio-user
+        group: minio-user
+
+    - name: Set permissions on mounted MinIO filesystem
+      ansible.builtin.file:
+        path: /mnt/minio
+        owner: minio-user
+        group: minio-user
+        mode: 0755
+        state: directory
+
+    - name: Install MinIO package
+      ansible.builtin.apt:
+        deb: https://dl.min.io/server/minio/release/linux-amd64/archive/minio_20230106181118.0.0_amd64.deb
+
+    - name: Create MinIO environment variable file
+      ansible.builtin.copy:
+        dest: /etc/default/minio
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          MINIO_ROOT_USER={{ minio_root_user }}
+          MINIO_ROOT_PASSWORD={{ minio_root_password }}
+          MINIO_VOLUMES={{ minio_path }}
+      register: create_minio_environment_variable_file
+
+    - name: Restart MinIO service if configuration changed
+      ansible.builtin.service: # noqa no-handler
+        name: minio
+        state: restarted
+      when: create_minio_environment_variable_file.changed
+
+    - name: Start and enable MinIO service
+      ansible.builtin.service:
+        name: minio
+        state: started
+        enabled: true
+
+    - name: Install MinIO CLI binary
+      ansible.builtin.get_url:
+        url: https://dl.min.io/client/mc/release/linux-amd64/mc
+        dest: /usr/local/bin/mc
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Install prerequisites for AWS modules
+      ansible.builtin.apt:
+        pkg:
+          - python3-boto3
+          - python3-botocore
+
+    # This works with amazon.aws 5.2.0 but not with 1.4 that
+    # comes with Ansible 2.10 from the PPA repo.  It claims
+    # to require Ansible 2.12, but this part seems to work okay
+    # with Ansible 2.10 (although it complains).
+    - name: Create MinIO buckets
+      amazon.aws.s3_bucket:
+        name: '{{ item }}'
+        endpoint_url: 'http://localhost:9000'
+        access_key: '{{ minio_root_user }}'
+        secret_key: '{{ minio_root_password }}'
+      loop:
+        - '{{ s3_bucket_mimir_blocks }}'
+        - '{{ s3_bucket_mimir_alertmanager }}'
+        - '{{ s3_bucket_mimir_ruler }}'
+        - '{{ s3_bucket_loki_admin }}'
+        - '{{ s3_bucket_loki_chunks }}'
+        - '{{ s3_bucket_loki_ruler }}'

@@ -1,0 +1,68 @@
+---
+
+- name: Configure monlablb servers
+  hosts: monlablb
+  gather_facts: false
+  tasks:
+
+    - name: Wait for monlablb servers to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+        sleep: 10
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Update packages
+      ansible.builtin.apt:
+        name: '*'
+        update_cache: true
+      register: update_packages
+
+    - name: Reboot if packages updated
+      ansible.builtin.reboot: # noqa no-handler
+      when: update_packages.changed
+
+    - name: Install HAProxy prerequisites
+      ansible.builtin.apt:
+        pkg:
+          - software-properties-common
+
+    - name: Add HAProxy repository
+      ansible.builtin.apt_repository:
+        repo: ppa:vbernat/haproxy-2.6
+
+    - name: Install HAProxy
+      ansible.builtin.apt:
+        name: haproxy=2.6.*
+        update_cache: true
+
+    - name: Configure HAProxy for Kubernetes
+      ansible.builtin.blockinfile:
+        path: /etc/haproxy/haproxy.cfg
+        backup: true
+        block: |
+          frontend controlplane.monlab.prism.local
+            mode tcp
+            bind *:6443
+            default_backend controlplane
+
+          backend controlplane
+            balance roundrobin
+            mode tcp
+            server monlabcp1 192.168.245.11:6443 check
+            server monlabcp2 192.168.245.12:6443 check
+            server monlabcp3 192.168.245.13:6443 check
+      register: configure_haproxy
+
+    - name: Start and enable haproxy
+      ansible.builtin.service:
+        name: haproxy
+        state: started
+        enabled: true
+
+    - name: Restart haproxy if necessary
+      ansible.builtin.service: # noqa no-handler
+        name: haproxy
+        state: restarted
+      when: configure_haproxy.changed
