@@ -137,6 +137,50 @@
           export EDITOR="vim"
           export VISUAL="${EDITOR}"
 
+    - name: Add /etc/hosts entries
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.252.11 kadmlabnode1.kadmlab.prism.local kadmlabnode1
+          192.168.252.12 kadmlabnode2.kadmlab.prism.local kadmlabnode2
+          192.168.252.13 kadmlabnode3.kadmlab.prism.local kadmlabnode3
+          192.168.252.14 kadmlabnode4.kadmlab.prism.local kadmlabnode4
+          192.168.252.15 kadmlabnode5.kadmlab.prism.local kadmlabnode5
+          192.168.252.16 kadmlabnode6.kadmlab.prism.local kadmlabnode6
+          192.168.252.11 kadmlablb1.kadmlab.prism.local kadmlablb1
+          192.168.252.12 kadmlablb2.kadmlab.prism.local kadmlablb2
+          192.168.252.100 controlplane.kadmlab.prism.local
+          192.168.249.11 deplabserver.deplab.prism.local deplabserver
+          192.168.247.11 simplabcp1.simplab.prism.local simplabcp1
+          192.168.247.12 simplabcp2.simplab.prism.local simplabcp2
+          192.168.247.13 simplabcp3.simplab.prism.local simplabcp3
+          192.168.247.21 simplabwk1.simplab.prism.local simplabwk1
+          192.168.247.22 simplabwk2.simplab.prism.local simplabwk2
+          192.168.247.23 simplabwk3.simplab.prism.local simplabwk3
+          192.168.247.31 simplablb1.simplab.prism.local simplablb1
+          192.168.247.41 simplabstor1.simplab.prism.local simplabstor1
+          192.168.247.31 controlplane.simplab.prism.local
+          192.168.245.11 monlabcp1.monlab.prism.local monlabcp1
+          192.168.245.12 monlabcp2.monlab.prism.local monlabcp2
+          192.168.245.13 monlabcp3.monlab.prism.local monlabcp3
+          192.168.245.21 monlabwk1.monlab.prism.local monlabwk1
+          192.168.245.22 monlabwk2.monlab.prism.local monlabwk2
+          192.168.245.23 monlabwk3.monlab.prism.local monlabwk3
+          192.168.245.31 monlablb1.monlab.prism.local monlablb1
+          192.168.245.41 monlabstor1.monlab.prism.local monlabstor1
+          192.168.245.31 controlplane.monlab.prism.local
+
+    - name: Create SSH client config
+      ansible.builtin.copy:
+        dest: /home/jafager/.ssh/config
+        owner: jafager
+        group: jafager
+        mode: 0644
+        content: |
+          Host *
+            StrictHostKeyChecking false
+
+
     # - name: Manage .bashrc
     #   ansible.builtin.blockinfile:
     #     path: /home/jafager/.bashrc
@@ -241,30 +285,6 @@
     #           IdentityFile ~/.ssh/ntirety
     #           HostKeyAlgorithms +ssh-rsa,ssh-dss
     #           PubkeyAcceptedKeyTypes +ssh-rsa
-
-    # - name: Add /etc/hosts entries
-    #   ansible.builtin.blockinfile:
-    #     path: /etc/hosts
-    #     block: |
-    #       192.168.252.11 kadmlabnode1.kadmlab.prism.local kadmlabnode1
-    #       192.168.252.12 kadmlabnode2.kadmlab.prism.local kadmlabnode2
-    #       192.168.252.13 kadmlabnode3.kadmlab.prism.local kadmlabnode3
-    #       192.168.252.14 kadmlabnode4.kadmlab.prism.local kadmlabnode4
-    #       192.168.252.15 kadmlabnode5.kadmlab.prism.local kadmlabnode5
-    #       192.168.252.16 kadmlabnode6.kadmlab.prism.local kadmlabnode6
-    #       192.168.252.11 kadmlablb1.kadmlab.prism.local kadmlablb1
-    #       192.168.252.12 kadmlablb2.kadmlab.prism.local kadmlablb2
-    #       192.168.252.100 controlplane.kadmlab.prism.local
-    #       192.168.249.11 deplabserver.deplab.prism.local deplabserver
-    #       192.168.247.11 simplabcp1.simplab.prism.local simplabcp1
-    #       192.168.247.12 simplabcp2.simplab.prism.local simplabcp2
-    #       192.168.247.13 simplabcp3.simplab.prism.local simplabcp3
-    #       192.168.247.21 simplabwk1.simplab.prism.local simplabwk1
-    #       192.168.247.22 simplabwk2.simplab.prism.local simplabwk2
-    #       192.168.247.23 simplabwk3.simplab.prism.local simplabwk3
-    #       192.168.247.31 simplablb1.simplab.prism.local simplablb1
-    #       192.168.247.41 simplabstor1.simplab.prism.local simplabstor1
-    #       192.168.247.31 controlplane.simplab.prism.local
 
     # - name: Install OpenVPN
     #   ansible.builtin.apt:
