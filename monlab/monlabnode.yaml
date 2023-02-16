@@ -48,6 +48,26 @@
         from_ip: 192.168.245.1
         rule: allow
 
+    - name: Allow all incoming traffic from other nodes
+      community.general.ufw:
+        direction: in
+        from_ip: '{{ item }}'
+        rule: allow
+      loop:
+        - 192.168.245.11
+        - 192.168.245.12
+        - 192.168.245.13
+        - 192.168.245.21
+        - 192.168.245.22
+        - 192.168.245.23
+
+    - name: Allow Kubernetes API
+      community.general.ufw:
+        direction: in
+        proto: tcp
+        port: '6443'
+        rule: allow
+
     - name: Enable firewall
       community.general.ufw:
         state: enabled

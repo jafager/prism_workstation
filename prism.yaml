@@ -180,6 +180,19 @@
           Host *
             StrictHostKeyChecking false
 
+    - name: Add Kubernetes repository key
+      ansible.builtin.apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+
+    - name: Add Kubernetes repository
+      ansible.builtin.apt_repository:
+        repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
+
+    - name: Install kubectl
+      ansible.builtin.apt:
+        name: kubectl
+        update_cache: true
+
 
     # - name: Manage .bashrc
     #   ansible.builtin.blockinfile:
@@ -193,26 +206,6 @@
     #       }
     #       export KUBECONFIG=/home/jafager/projects/prism_workstation/kadmlab/kubeconfig
 
-    # - name: Install Kubernetes (?) prerequisites
-    #   ansible.builtin.apt:
-    #     name: '{{ item }}'
-    #   loop:
-    #     - ca-certificates
-    #     - curl
-
-    # - name: Add Kubernetes repository key
-    #   ansible.builtin.apt_key:
-    #     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-
-    # - name: Add Kubernetes repository
-    #   ansible.builtin.apt_repository:
-    #     repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
-
-    # - name: Install kubectl
-    #   ansible.builtin.apt:
-    #     name: kubectl
-    #     update_cache: true
-
     # - name: Download RKE binary
     #   ansible.builtin.get_url:
     #     url: https://github.com/rancher/rke/releases/download/v1.4.1/rke_linux-amd64
@@ -220,71 +213,6 @@
     #     owner: root
     #     group: root
     #     mode: 0755
-
-    # - name: Create SSH client config
-    #   ansible.builtin.copy:
-    #     dest: /home/jafager/.ssh/config
-    #     owner: jafager
-    #     group: jafager
-    #     mode: 0644
-    #     content: |
-    #       Host kadmlabnode1.kadmlab.prism.local kadmlabnode1
-    #           HostName 192.168.252.11
-    #           StrictHostKeyChecking no
-    #       Host kadmlabnode2.kadmlab.prism.local kadmlabnode2
-    #           HostName 192.168.252.12
-    #           StrictHostKeyChecking no
-    #       Host kadmlabnode3.kadmlab.prism.local kadmlabnode3
-    #           HostName 192.168.252.13
-    #           StrictHostKeyChecking no
-    #       Host kadmlabnode4.kadmlab.prism.local kadmlabnode4
-    #           HostName 192.168.252.14
-    #           StrictHostKeyChecking no
-    #       Host kadmlabnode5.kadmlab.prism.local kadmlabnode5
-    #           HostName 192.168.252.15
-    #           StrictHostKeyChecking no
-    #       Host kadmlabnode6.kadmlab.prism.local kadmlabnode6
-    #           HostName 192.168.252.16
-    #           StrictHostKeyChecking no
-    #       Host kadmlablb1.kadmlab.prism.local kadmlablb1
-    #           HostName 192.168.252.21
-    #           StrictHostKeyChecking no
-    #       Host kadmlablb2.kadmlab.prism.local kadmlablb2
-    #           HostName 192.168.252.22
-    #           StrictHostKeyChecking no
-    #       Host deplabserver.deplab.prism.local deplabserver
-    #           HostName 192.168.249.11
-    #           StrictHostKeyChecking no
-    #       Host simplabcp1.simplab.prism.local simplabcp1
-    #           HostName 192.168.247.11
-    #           StrictHostKeyChecking no
-    #       Host simplabcp2.simplab.prism.local simplabcp2
-    #           HostName 192.168.247.12
-    #           StrictHostKeyChecking no
-    #       Host simplabcp3.simplab.prism.local simplabcp3
-    #           HostName 192.168.247.13
-    #           StrictHostKeyChecking no
-    #       Host simplabwk1.simplab.prism.local simplabwk1
-    #           HostName 192.168.247.21
-    #           StrictHostKeyChecking no
-    #       Host simplabwk2.simplab.prism.local simplabwk2
-    #           HostName 192.168.247.22
-    #           StrictHostKeyChecking no
-    #       Host simplabwk3.simplab.prism.local simplabwk3
-    #           HostName 192.168.247.23
-    #           StrictHostKeyChecking no
-    #       Host simplablb1.simplab.prism.local simplablb1
-    #           HostName 192.168.247.31
-    #           StrictHostKeyChecking no
-    #       Host simplabstor1.simplab.prism.local simplabstor1
-    #           HostName 192.168.247.41
-    #           StrictHostKeyChecking no
-    #       Host puppet2.hosting.com puppet2 foreman2.nwk01.hosting.com foreman2
-    #           HostName puppet2.hosting.com
-    #           User jfager
-    #           IdentityFile ~/.ssh/ntirety
-    #           HostKeyAlgorithms +ssh-rsa,ssh-dss
-    #           PubkeyAcceptedKeyTypes +ssh-rsa
 
     # - name: Install OpenVPN
     #   ansible.builtin.apt:
