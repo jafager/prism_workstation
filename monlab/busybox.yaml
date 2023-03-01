@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pingtest
+spec:
+  containers:
+    - name: pingtest
+      image: busybox
+      command: ["sleep", "infinity"]
+      securityContext:
+        capabilities:
+          add:
+            - NET_RAW
+          drop:
+            - ALL

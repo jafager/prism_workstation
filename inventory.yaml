@@ -195,5 +195,7 @@ all:
         ansible_user: jafager
         ansible_host_key_checking: false
         ansible_ssh_common_args: -o StrictHostKeyChecking=false
+        nodeports:
+          mimir: 30000
   vars:
     ansible_become: yes

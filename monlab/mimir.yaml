@@ -1,0 +1,69 @@
+---
+
+- name: Install Mimir
+  hosts: monlabcp,monlabwk
+  tasks:
+
+    - name: Add Grafana repository
+      kubernetes.core.helm_repository:
+        name: grafana
+        repo_url: https://grafana.github.io/helm-charts
+
+    - name: Copy Mimir values file
+      ansible.builtin.copy:
+        src: 'mimir_values.yaml'
+        dest: /tmp/mimir_values.yaml
+        owner: root
+        group: root
+        mode: 0644
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install Mimir chart
+      kubernetes.core.helm:
+        name: mimir
+        chart_ref: grafana/mimir-distributed
+        release_namespace: mimir
+        create_namespace: true
+        values_files: /tmp/mimir_values.yaml
+        values:
+          mimir:
+            structuredConfig:
+              common:
+                storage:
+                  backend: s3
+                  s3:
+                    endpoint: '{{ s3_endpoint }}'
+                    access_key_id: '{{ minio_root_user }}'
+                    secret_access_key: '{{ minio_root_password }}'
+                    insecure: true
+              blocks_storage:
+                s3:
+                  bucket_name: '{{ s3_bucket_mimir_blocks }}'
+              alertmanager_storage:
+                s3:
+                  bucket_name: '{{ s3_bucket_mimir_alertmanager }}'
+              ruler_storage:
+                s3:
+                  bucket_name: '{{ s3_bucket_mimir_ruler }}'
+          nginx:
+            service:
+              type: NodePort
+              nodePort: '{{ nodeports.mimir }}'
+            tls:
+          memcached:
+            image:
+              repository: docker.io/memcached
+              tag: 1.6.16-alpine
+          memcachedExporter:
+            image:
+              repository: quay.io/prometheus/memcached-exporter
+              tag: v0.6.0
+        kubeconfig: /etc/kubernetes/admin.conf
+        wait: false # TODO - revert to true?
+      when: initial_control_plane == inventory_hostname
+
+    - name: Delete Mimir values file
+      ansible.builtin.file:
+        path: /tmp/mimir_values.yaml
+        state: absent
+      when: initial_control_plane == inventory_hostname
