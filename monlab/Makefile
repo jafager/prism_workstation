@@ -5,3 +5,5 @@ reset:
 	ansible-playbook monlabstor.yaml
 	ansible-playbook monlabnode.yaml
 	ansible-playbook calico.yaml
+	ansible-playbook nfs_provisioner.yaml
+	ansible-playbook mimir.yaml

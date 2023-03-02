@@ -128,6 +128,14 @@
           - cri-o-runc
         update_cache: true
 
+    - name: Remove default networking configurations (since we are using Calico)
+      ansible.builtin.file:
+        path: '/etc/cni/net.d/{{ item }}'
+        state: absent
+      loop:
+        - 100-crio-bridge.conflist
+        - 200-loopback.conflist
+
     - name: Start and enable CRI-O
       ansible.builtin.service:
         name: crio
@@ -204,6 +212,7 @@
           networking:
             serviceSubnet: "172.16.0.0/16"
             podSubnet: "172.17.0.0/16"
+            dnsDomain: "monlab.prism.local"
           controlPlaneEndpoint: "controlplane.monlab.prism.local:6443"
       when: initial_control_plane == inventory_hostname
 
