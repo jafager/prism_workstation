@@ -1,0 +1,196 @@
+---
+
+- name: Install Prometheus
+  hosts: monlabcp,monlabwk
+  tasks:
+
+    - name: Add Prometheus repository
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install Prometheus operator chart
+      kubernetes.core.helm:
+        name: prom-operator
+        chart_ref: prometheus-community/kube-prometheus-stack
+        release_namespace: prom-operator
+        create_namespace: true
+        kubeconfig: /etc/kubernetes/admin.conf
+        wait: true
+      when: initial_control_plane == inventory_hostname
+
+    - name: Create namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: prometheus
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
+
+    - name: Deploy Prometheus
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: monitoring.coreos.com/v1
+          kind: Prometheus
+          metadata:
+            name: prometheus
+            namespace: prometheus
+          spec:
+            serviceAccountName: prometheus
+            serviceMonitorNamespaceSelector: {}
+            serviceMonitorSelector: {}
+            resources:
+              requests:
+                memory: 400Mi
+            enableAdminAPI: false
+            remoteWrite:
+              - url: http://mimir-nginx.mimir.svc.monlab.prism.local:8080/api/v1/push
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
+
+    - name: Create service
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: prometheus
+            namespace: prometheus
+          spec:
+            type: NodePort
+            ports:
+              - name: web
+                nodePort: '{{ nodeports.prometheus }}'
+                port: 9090
+                protocol: TCP
+                targetPort: web
+            selector:
+              prometheus: prometheus
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
+
+    - name: Create service account
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: prometheus
+            namespace: prometheus
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
+
+    - name: Create cluster role
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: prometheus
+            namespace: prometheus
+          rules:
+            - apiGroups: [""]
+              resources:
+                - nodes
+                - nodes/metrics
+                - services
+                - endpoints
+                - pods
+              verbs: ["get", "list", "watch"]
+            - apiGroups: [""]
+              resources:
+                - configmaps
+              verbs: ["get"]
+            - apiGroups:
+                - networking.k8s.io
+              resources:
+                - ingresses
+              verbs: ["get", "list", "watch"]
+            - nonResourceURLs: ["/metrics"]
+              verbs: ["get"]
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
+
+    - name: Create cluster role binding
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: prometheus
+            namespace: prometheus
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: prometheus
+          subjects:
+            - kind: ServiceAccount
+              name: prometheus
+              namespace: default
+        kubeconfig: /etc/kubernetes/admin.conf
+      when: initial_control_plane == inventory_hostname
+
+    # - name: Create Prometheus configuration
+    #   kubernetes.core.k8s:
+    #     state: present
+    #     definition:
+    #       apiVersion: v1
+    #       kind: ConfigMap
+    #       metadata:
+    #         name: prometheus-config
+    #         namespace: calico-monitoring
+    #       data:
+    #         prometheus.yml: |-
+    #           global:
+    #             scrape_interval:   15s
+    #             external_labels:
+    #               monitor: 'tutorial-monitor'
+    #           scrape_configs:
+    #           - job_name: 'prometheus'
+    #             scrape_interval: 5s
+    #             static_configs:
+    #             - targets: ['localhost:9090']
+    #           - job_name: 'felix_metrics'
+    #             scrape_interval: 5s
+    #             scheme: http
+    #             kubernetes_sd_configs:
+    #             - role: endpoints
+    #             relabel_configs:
+    #             - source_labels: [__meta_kubernetes_service_name]
+    #               regex: felix-metrics
+    #               replacement: $1
+    #               action: keep
+    #           - job_name: 'typha_metrics'
+    #             scrape_interval: 5s
+    #             scheme: http
+    #             kubernetes_sd_configs:
+    #             - role: endpoints
+    #             relabel_configs:
+    #             - source_labels: [__meta_kubernetes_service_name]
+    #               regex: typha-metrics
+    #               replacement: $1
+    #               action: keep
+    #             - source_labels: [__meta_kubernetes_pod_container_port_name]
+    #               regex: calico-typha
+    #               action: drop
+    #           - job_name: 'kube_controllers_metrics'
+    #             scrape_interval: 5s
+    #             scheme: http
+    #             kubernetes_sd_configs:
+    #             - role: endpoints
+    #             relabel_configs:
+    #             - source_labels: [__meta_kubernetes_service_name]
+    #               regex: calico-kube-controllers-metrics
+    #               replacement: $1
+    #               action: keep
+    #     kubeconfig: /etc/kubernetes/admin.conf
+    #   when: initial_control_plane == inventory_hostname

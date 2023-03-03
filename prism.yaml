@@ -193,6 +193,12 @@
         name: kubectl
         update_cache: true
 
+    - name: Manage .bashrc
+      ansible.builtin.blockinfile:
+        path: /home/jafager/.bashrc
+        block: |
+          export KUBECONFIG=/home/jafager/projects/prism_workstation/monlab/kubeconfig
+
 
     # - name: Manage .bashrc
     #   ansible.builtin.blockinfile:

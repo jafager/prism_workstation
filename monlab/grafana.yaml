@@ -1,0 +1,27 @@
+---
+
+- name: Install Grafana
+  hosts: monlabcp,monlabwk
+  tasks:
+
+    - name: Add Grafana repository
+      kubernetes.core.helm_repository:
+        name: grafana
+        repo_url: https://grafana.github.io/helm-charts
+      when: initial_control_plane == inventory_hostname
+
+    - name: Install Grafana chart
+      kubernetes.core.helm:
+        name: grafana
+        chart_ref: grafana/grafana
+        release_namespace: grafana
+        create_namespace: true
+        values:
+          service:
+            type: NodePort
+            nodePort: '{{ nodeports.grafana }}'
+          adminUser: admin
+          adminPassword: ArAtUrTqboWCy3aYifvRy3P4ojPwcREF
+        kubeconfig: /etc/kubernetes/admin.conf
+        wait: true
+      when: initial_control_plane == inventory_hostname

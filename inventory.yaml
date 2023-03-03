@@ -197,5 +197,7 @@ all:
         ansible_ssh_common_args: -o StrictHostKeyChecking=false
         nodeports:
           mimir: 30000
+          grafana: 30001
+          prometheus: 30002
   vars:
     ansible_become: yes

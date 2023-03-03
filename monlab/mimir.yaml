@@ -26,6 +26,8 @@
         create_namespace: true
         values_files: /tmp/mimir_values.yaml
         values:
+          global:
+            clusterDomain: monlab.prism.local.
           mimir:
             structuredConfig:
               common:
@@ -59,7 +61,7 @@
               repository: quay.io/prometheus/memcached-exporter
               tag: v0.6.0
         kubeconfig: /etc/kubernetes/admin.conf
-        wait: false # TODO - revert to true?
+        wait: true
       when: initial_control_plane == inventory_hostname
 
     - name: Delete Mimir values file
