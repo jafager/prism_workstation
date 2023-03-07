@@ -7,3 +7,4 @@ reset:
 	ansible-playbook calico.yaml
 	ansible-playbook nfs_provisioner.yaml
 	ansible-playbook mimir.yaml
+	ansible-playbook grafana.yaml

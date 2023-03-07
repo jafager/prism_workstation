@@ -199,6 +199,28 @@
         block: |
           export KUBECONFIG=/home/jafager/projects/prism_workstation/monlab/kubeconfig
 
+    - name: Create logical volume for swap
+      community.general.lvol:
+        lv: swap
+        vg: datavg
+        size: 32g
+
+    - name: Format swap volume
+      community.general.filesystem:
+        dev: /dev/datavg/swap
+        fstype: swap
+
+    - name: Enable swap volume on boot
+      ansible.posix.mount:
+        path: none
+        src: /dev/datavg/swap
+        fstype: swap
+        state: present
+
+    - name: Enable all swap volumes
+      ansible.builtin.command: # noqa no-changed-when
+        cmd: swapon -a
+
 
     # - name: Manage .bashrc
     #   ansible.builtin.blockinfile:

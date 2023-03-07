@@ -69,7 +69,7 @@
                 nodePort: '{{ nodeports.prometheus }}'
                 port: 9090
                 protocol: TCP
-                targetPort: web
+                targetPort: 80
             selector:
               prometheus: prometheus
         kubeconfig: /etc/kubernetes/admin.conf
@@ -138,6 +138,7 @@
               namespace: default
         kubeconfig: /etc/kubernetes/admin.conf
       when: initial_control_plane == inventory_hostname
+
 
     # - name: Create Prometheus configuration
     #   kubernetes.core.k8s:
